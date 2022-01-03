@@ -1,15 +1,7 @@
 # %%
 # Import candidate models
-from doubt import Boot, QuantileRegressor, QuantileRegressionForest
-from sklearn.linear_model import (
-    LinearRegression,
-    PoissonRegressor,
-    GammaRegressor,
-    HuberRegressor,
-)
+from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.svm import LinearSVR
-from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_absolute_error
@@ -35,14 +27,10 @@ from doubt.datasets import (
 # Import external libraries
 import pandas as pd
 import numpy as np
-from tqdm.auto import tqdm, trange
+from tqdm.auto import tqdm
+import shap
+
 import matplotlib.pyplot as plt
-
-plt.style.use("ggplot")
-
-import warnings
-from collections import defaultdict
-
 from matplotlib import rcParams
 
 plt.style.use("seaborn-whitegrid")
@@ -52,14 +40,8 @@ rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
 plt.rcParams["figure.figsize"] = [10, 5]
 
-# Import internal classes
-from distributions import DistributionShift
-from tqdm.notebook import tqdm
-from xgboost import XGBRegressor
-from tabulate import tabulate
 
-import shap
-
+from collections import defaultdict
 from utils import initialise_plot
 
 # %%
