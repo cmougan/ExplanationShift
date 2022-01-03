@@ -1,8 +1,12 @@
 # %%
 # Import candidate models
 from doubt import Boot, QuantileRegressor, QuantileRegressionForest
-from sklearn.linear_model import (LinearRegression, PoissonRegressor, 
-                                  GammaRegressor, HuberRegressor)
+from sklearn.linear_model import (
+    LinearRegression,
+    PoissonRegressor,
+    GammaRegressor,
+    HuberRegressor,
+)
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import LinearSVR
 from sklearn.neural_network import MLPRegressor
@@ -11,28 +15,42 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_absolute_error
 
 # Import datasets
-from doubt.datasets import (Airfoil, Blog, Concrete, CPU, 
-                            FacebookComments, FishBioconcentration,
-                            FishToxicity, ForestFire, NewTaipeiHousing,
-                            PowerPlant, Protein, Servo,
-                            SpaceShuttle, Yacht)
+from doubt.datasets import (
+    Airfoil,
+    Blog,
+    Concrete,
+    CPU,
+    FacebookComments,
+    FishBioconcentration,
+    FishToxicity,
+    ForestFire,
+    NewTaipeiHousing,
+    PowerPlant,
+    Protein,
+    Servo,
+    SpaceShuttle,
+    Yacht,
+)
 
 # Import external libraries
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm, trange
-import matplotlib.pyplot as plt; plt.style.use('ggplot')
+import matplotlib.pyplot as plt
+
+plt.style.use("ggplot")
 
 import warnings
 from collections import defaultdict
 
 from matplotlib import rcParams
-plt.style.use('seaborn-whitegrid')
-rcParams['axes.labelsize'] = 14
-rcParams['xtick.labelsize'] = 12
-rcParams['ytick.labelsize'] = 12
-rcParams['figure.figsize'] = 16,8
-plt.rcParams['figure.figsize'] = [10, 5]
+
+plt.style.use("seaborn-whitegrid")
+rcParams["axes.labelsize"] = 14
+rcParams["xtick.labelsize"] = 12
+rcParams["ytick.labelsize"] = 12
+rcParams["figure.figsize"] = 16, 8
+plt.rcParams["figure.figsize"] = [10, 5]
 
 # Import internal classes
 from distributions import DistributionShift
@@ -47,13 +65,13 @@ from utils import initialise_plot
 # %%
 dataset_classes = [
     Airfoil,
-    #Concrete,
-    #FishToxicity,
-    #ForestFire,
-    #NewTaipeiHousing,
-    #PowerPlant,
-    #Protein,
-    #Servo,
+    # Concrete,
+    # FishToxicity,
+    # ForestFire,
+    # NewTaipeiHousing,
+    # PowerPlant,
+    # Protein,
+    # Servo,
 ]
 for dataset in dataset_classes:
     print(dataset().shape)
@@ -162,8 +180,7 @@ def monitoring_plot(dataset, base_regressor: type, n_boots: int = 20, **kwargs):
             df["mean_shap_full"] = np.mean(np.abs(shap_values_full), axis=1)
             df["shap_diff"] = np.abs(df["mean_shap"] - df["mean_shap_full"])
             shap_res.append(df.shap_diff.mean())
-            error_raw = df['error'].values
-
+            error_raw = df["error"].values
 
             ROLLING_STAT = 100
             ### Rolling window on all
@@ -172,42 +189,39 @@ def monitoring_plot(dataset, base_regressor: type, n_boots: int = 20, **kwargs):
             ## Scaling
             df = df.dropna()
             df = pd.DataFrame(standard_scaler.fit_transform(df), columns=df.columns)
-            
-           
 
             # Convert to dic for plotting
-            for index, col in enumerate(df[['error','shap_diff']].columns):
+            for index, col in enumerate(df[["error", "shap_diff"]].columns):
                 values[col] = df[col]
 
-            #uncertainty_res.append(mean_absolute_error(values["error"], values["uncertainty"]))
-            #ks_res.append(mean_absolute_error(values["error"], values["ks"]))
-            #psi_res.append(mean_absolute_error(values["error"], values["PSI"]))
+            # uncertainty_res.append(mean_absolute_error(values["error"], values["uncertainty"]))
+            # ks_res.append(mean_absolute_error(values["error"], values["ks"]))
+            # psi_res.append(mean_absolute_error(values["error"], values["PSI"]))
 
             # Plotting
             for name, vals in values.items():
                 if idx == 0:
                     axs[idx // 3, idx % 3].plot(vals, label=f"{name} values")
                 else:
-                    axs[idx // 3, idx % 3].plot(vals,label=f"{name} values")
-                    
+                    axs[idx // 3, idx % 3].plot(vals, label=f"{name} values")
 
         plt.figure()
         plt.title("Error raw")
         plt.plot(error_raw)
         plt.show()
-                
+
         plt.figure()
         plt.title("Error rolling window")
         plt.plot(df["error"].values)
-        plt.xlabel('Sorted column index ')
-        plt.ylabel('Absolute Error')
+        plt.xlabel("Sorted column index ")
+        plt.ylabel("Absolute Error")
         plt.show()
 
         plt.figure()
         plt.title("Mean absolute shap value per row (RW)")
         plt.plot(df["mean_shap"].values, color="blue")
-        plt.xlabel('Sorted column index ')
-        plt.ylabel('Shap value contribution (absolute value)')
+        plt.xlabel("Sorted column index ")
+        plt.ylabel("Shap value contribution (absolute value)")
         plt.show()
         plt.figure()
         plt.title("Shap values between  (RW)")
@@ -223,27 +237,27 @@ def monitoring_plot(dataset, base_regressor: type, n_boots: int = 20, **kwargs):
         # plt.plot(df["mean_shap_full"].values,color='k',label='Full Train')
         plt.plot(df["error"].values, color="red", label="Model Performance")
         plt.plot(
-                    df["shap_diff"].values,
-                    color="orange",
-                    label="Shap difference(Explanation Error)",
-                )
+            df["shap_diff"].values,
+            color="orange",
+            label="Shap difference(Explanation Error)",
+        )
         plt.legend()
         plt.show()
-        
-        
+
         resultados = pd.DataFrame({"shap_res": shap_res})
         media = resultados.mean()
         std = resultados.std()
         resultados.loc["mean"] = media
         resultados.loc["std"] = std
-        
+
         print(resultados.to_string())
 
         fig.legend()
         # plt.savefig("fig.png")
         plt.show()
 
+
 # %%
 for dataset in dataset_classes:
-     monitoring_plot(dataset, XGBRegressor)
+    monitoring_plot(dataset, XGBRegressor)
 # %%
