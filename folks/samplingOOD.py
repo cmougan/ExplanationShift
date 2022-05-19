@@ -49,8 +49,8 @@ random.seed(0)
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
 ca_data = data_source.get_data(states=["CA"], download=True)
-data_source = ACSDataSource(survey_year="2016", horizon="1-Year", survey="person")
-mi_data = data_source.get_data(states=["MI"], download=True)
+data_source = ACSDataSource(survey_year="2015", horizon="1-Year", survey="person")
+mi_data = data_source.get_data(states=["CA"], download=True)
 # %%
 states = [
     "MI",
@@ -220,7 +220,7 @@ for state in tqdm(states, desc="States", position=0):
     tx_full["target"] = tx_labels
 
     # Loop to create training data
-    for i in tqdm(range(0, int(ITERS/20)), leave=False, desc="Bootstrap", position=1):
+    for i in tqdm(range(0, int(ITERS)), leave=False, desc="Bootstrap", position=1):
         row_ood = []
         row_shap_ood = []
         row_target_shift_ood = []
