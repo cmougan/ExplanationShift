@@ -127,16 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-*.idea/*
-
-*.DS_Store
-
-
+.DS_Store
+results_synth
 stupid.py
-stupid.ipynb
+data/*
+results/*
+folks/data/*
+*.ipynb_checkpoints*
 *.csv
-.dataset_cache
-Untitled.ipynb
-
-**/.vim
+*.gz
+*.svg
+ATC_code.py
