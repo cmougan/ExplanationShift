@@ -4,7 +4,7 @@ import unittest
 
 import pandas as pd
 import numpy as np
-from ATC_opt import OptimizedRounder
+from rounder import OptimizedRounder
 from sklearn.metrics import accuracy_score
 
 
