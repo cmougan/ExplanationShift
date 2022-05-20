@@ -137,5 +137,4 @@ folks/data/*
 *.csv
 *.gz
 *.svg
-ATC_code.py
 *.idea/*
