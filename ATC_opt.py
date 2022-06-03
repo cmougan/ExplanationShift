@@ -18,7 +18,7 @@ class OptimizedRounder(object):
 
     def fit(self, X, y):
         loss_partial = partial(self._accuracy, X=X, y=y)
-        initial_coef = [0.5]
+        initial_coef = np.repeat([0.5],X.shape[1])
         self.coef_ = sp.optimize.minimize(loss_partial, initial_coef, method="Powell")
 
     def predict(self, X, coef=None):
@@ -96,6 +96,7 @@ class ATC(object):
                 thres = sorted_score[i]
 
         return min_fp_fn, thres
+
 
     #def fit(self, source_probs, source_labels, score_function="MC"):
     def fit(self, X, Y, score_function="MC"):
@@ -188,26 +189,12 @@ class SATC(object):
         return min_fp_fn, thres
 
     #def fit(self, source_probs, source_labels, score_function="MC"):
-    def fit(self, X, y, score_function="MC"):
-        self.score_function = score_function
-        if self.score_function == "MC":
-            source_score = np.max(X, axis=-1)
-        elif self.score_function == "NE":
-            source_score = np.sum(
-                np.multiply(X, np.log(X + 1e-20)), axis=1
-            )
+    def fit(self, shap, preds_hard):   
+        opt = OptimizedRounder()
+        opt.fit(shap, preds_hard)
 
-        source_preds = np.argmax(X, axis=-1)
+        return opt.coef_["x"]
 
-        _, self.ATC_threshold = self.find_threshold_balance(
-            source_score, Y == source_preds
-        )
     #def predict(self, target_probs):
     def predict(self, X):
-        if self.score_function == "MC":
-            target_score = np.max(X, axis=-1)
-        elif self.score_function == "NE":
-            target_score = np.sum(
-                np.multiply(X, np.log(X + 1e-20)), axis=1
-            )
         return np.mean(target_score >= self.ATC_threshold) * 100.0
