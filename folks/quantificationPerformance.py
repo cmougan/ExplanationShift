@@ -26,7 +26,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.linear_model import LogisticRegression, Lasso, LinearRegression
 from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import roc_auc_score, mean_squared_error, mean_absolute_error
+from sklearn.metrics import accuracy_score, roc_auc_score, mean_squared_error, mean_absolute_error
 from sklearn.dummy import DummyRegressor
 from sklearn.svm import SVR
 
@@ -49,7 +49,7 @@ random.seed(0)
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
 ca_data = data_source.get_data(states=["CA"], download=True)
-data_source = ACSDataSource(survey_year="2016", horizon="1-Year", survey="person")
+data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
 mi_data = data_source.get_data(states=["HI"], download=True)
 # %%
 states = [
@@ -110,7 +110,7 @@ states = [
 
 data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
 
-
+# %%
 ca_features, ca_labels, ca_group = ACSEmployment.df_to_numpy(ca_data)
 mi_features, mi_labels, mi_group = ACSEmployment.df_to_numpy(mi_data)
 
@@ -128,14 +128,20 @@ preds_ca = cross_val_predict(
 model.fit(ca_features, ca_labels)
 # Test on MI data
 preds_mi = model.predict_proba(mi_features)[:, 1]
+# %% 
+from ATC_opt import ATC
+atc = ATC()
+atc.fit(model.predict_proba(ca_features),ca_labels)
+
 # %%
 ## Can we learn to solve this issue?
 ################################
 ####### PARAMETERS #############
-SAMPLE_FRAC = 2_00
-ITERS = 200
+SAMPLE_FRAC = 5_00
+ITERS = 1_000
 # Init
-train_error = roc_auc_score(ca_labels, preds_ca)
+train_error = accuracy_score(ca_labels, np.round(preds_ca))
+train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
 
 # xAI Train
 explainer = shap.Explainer(model)
@@ -155,6 +161,7 @@ def create_meta_data(test, samples, boots):
     performance = defaultdict()
     train_shap = defaultdict()
     train_shap_ood = defaultdict()
+    atc_scores = defaultdict()
     for i in tqdm(range(0, boots), leave=False, desc="Test Bootstrap", position=1):
         # Initiate
         row = []
@@ -166,9 +173,11 @@ def create_meta_data(test, samples, boots):
         aux = test.sample(n=samples, replace=True)
 
         # Performance calculation
-        preds = model.predict_proba(aux.drop(columns=["target", "group"]))[:, 1]
-        performance[i] = train_error - roc_auc_score(aux.target, preds)
+        preds = model.predict(aux.drop(columns=["target", "group"]))
+        performance[i] = train_error - accuracy_score(aux.target, preds)
 
+        # ATC
+        atc_scores[i] = atc.predict(model.predict_proba(aux.drop(columns=["target", "group"])))/100 - train_error_acc
         # Shap values calculation
         shap_values = explainer(aux.drop(columns=["target", "group"]))
         shap_values = pd.DataFrame(shap_values.values, columns=ca_features.columns)
@@ -201,9 +210,9 @@ def create_meta_data(test, samples, boots):
 
     # On the target
     performance = pd.DataFrame(performance, index=[0]).T.values
-    return train_df,train_shap_df,train_target_shift_df,performance.squeeze()
+    return train_df,train_shap_df,train_target_shift_df,performance.squeeze(),atc_scores
 
-input_tr,shap_tr,output_tr,model_error_tr = create_meta_data(mi_full, SAMPLE_FRAC, ITERS)
+input_tr,shap_tr,output_tr,model_error_tr,atc_scores= create_meta_data(mi_full, SAMPLE_FRAC, ITERS)
 # %%
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
@@ -214,7 +223,11 @@ clf = LinearRegression()
 clf.fit(X_tr,y_tr)
 mean_absolute_error(clf.predict(X_te),y_te)
 # %%
-np.sum(np.abs(model_error_tr)>0.05)
+mean_absolute_error(pd.DataFrame(atc_scores.values())/100,model_error_tr)
+# %%
+sns.kdeplot(model_error_tr)
+# %%
+lksd
 # %%
 # Trainning set
 for i in tqdm(range(0, ITERS), leave=False, desc="Test Bootstrap", position=1):
@@ -291,7 +304,7 @@ for state in tqdm(states, desc="States", position=0):
 
         # OOD performance calculation
         preds_ood = model.predict_proba(aux_ood.drop(columns=["target", "group"]))[:, 1]
-        performance_ood[i] = train_error - roc_auc_score(
+        performance_ood[i] = train_error - accuracy_score(
             aux_ood.target.values, preds_ood
         )
 
