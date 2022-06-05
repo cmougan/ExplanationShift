@@ -72,6 +72,7 @@ for gamma in tqdm(np.linspace(0, 5, 50)):
 # %%
 res = pd.DataFrame(fair, columns=["Gamma", "Fairness", "DP", "SHAP"])
 plt.figure()
+sns.set(font_scale=2)
 sns.scatterplot(x="Gamma", y="Fairness", data=res,label='EOF')
 sns.scatterplot(x="Gamma", y="SHAP", data=res,label='SHAP')
 sns.scatterplot(x="Gamma", y="DP", data=res,label='DP')
