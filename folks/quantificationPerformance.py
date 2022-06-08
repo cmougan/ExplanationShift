@@ -15,7 +15,8 @@ import pandas as pd
 from collections import defaultdict
 from scipy.stats import kstest, wasserstein_distance
 import seaborn as sns
-sns.set_style('whitegrid')
+
+sns.set_style("whitegrid")
 import numpy as np
 import random
 import sys
@@ -275,7 +276,7 @@ for i, state in tqdm(enumerate(states), total=len(states)):
         output_data[state],
         model_error_data[state],
         atc_scores_data[state],
-    ) = create_meta_data(tx_full, SAMPLE_FRAC, int(ITERS/10))
+    ) = create_meta_data(tx_full, SAMPLE_FRAC, int(ITERS / 10))
 # %%
 plt.plot()
 for k in input_data.keys():
@@ -301,16 +302,36 @@ state_res = []
 atc_res = []
 for state in input_data.keys():
     state_res.append(str(state))
-    input_results.append(mean_absolute_error(clf_input.predict(input_data[state]), model_error_data[state]))
-    output_results.append(mean_absolute_error(clf_output.predict(output_data[state]), model_error_data[state]))
-    shap_results.append(mean_absolute_error(clf_shap.predict(shap_data[state]), model_error_data[state]))
-    dummy_results.append(mean_absolute_error(dummy.predict(input_data[state]), model_error_data[state]))
-    atc_res.append(mean_absolute_error(pd.DataFrame(atc_scores_data[state].values()), model_error_data[state]))
+    input_results.append(
+        mean_absolute_error(
+            clf_input.predict(input_data[state]), model_error_data[state]
+        )
+    )
+    output_results.append(
+        mean_absolute_error(
+            clf_output.predict(output_data[state]), model_error_data[state]
+        )
+    )
+    shap_results.append(
+        mean_absolute_error(clf_shap.predict(shap_data[state]), model_error_data[state])
+    )
+    dummy_results.append(
+        mean_absolute_error(dummy.predict(input_data[state]), model_error_data[state])
+    )
+    atc_res.append(
+        mean_absolute_error(
+            pd.DataFrame(atc_scores_data[state].values()), model_error_data[state]
+        )
+    )
 
 
 # %%
-res = pd.DataFrame([input_results, output_results, shap_results, dummy_results,atc_res,state_res]).T
-res = res.rename(columns={0: "input", 1: "output", 2: "shap", 3: "dummy",4:"atc",5:"state"})
+res = pd.DataFrame(
+    [input_results, output_results, shap_results, dummy_results, atc_res, state_res]
+).T
+res = res.rename(
+    columns={0: "input", 1: "output", 2: "shap", 3: "dummy", 4: "atc", 5: "state"}
+)
 # %%
 aux = res.mean()
 sns.barplot(x=aux.index, y=aux.values)
