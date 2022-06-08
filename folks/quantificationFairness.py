@@ -73,15 +73,15 @@ states = [
     "OK",
     "PA",
     "KS",
+]
+
+nooo = [
     "IA",
     "KY",
     "NY",
     "LA",
     "TX",
     "UT",
-]
-
-nooo = [
     "OR",
     "ME",
     "NJ",
@@ -152,8 +152,7 @@ shap_ca = pd.DataFrame(shap_ca.values, columns=X.columns)
 
 # %%
 # Other states
-
-data_source = ACSDataSource(survey_year="2016", horizon="1-Year", survey="person")
+data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
 results = defaultdict()
 for state in tqdm(states):
     mi_data = data_source.get_data(states=[state], download=True)
@@ -177,18 +176,18 @@ for state in tqdm(states):
     eof_mi = white_tpr - black_tpr
 
     # Shap
-    shap_diff = kstest(
-        shap_mi["group"][mi_group == 1], shap_mi["group"][mi_group == 2]
-    ).statistic
+    shap_diff = np.mean(shap_mi["group"][(mi_group == 2)])
     results[state] = [ks, eof_mi, shap_diff]
 # %%
 
 res = pd.DataFrame(results).T
 # res = pd.DataFrame(StandardScaler().fit_transform(res))
 res.columns = ["DP", "EOF", "SHAP"]
-res["SHAP"] = res["SHAP"]
+res["SHAP"] = res["SHAP"] * 30
 res.sort_values(by="SHAP", ascending=False).plot()
 # %%
 
 res.describe()
+# %%
+res
 # %%
