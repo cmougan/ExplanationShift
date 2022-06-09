@@ -150,7 +150,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ## Can we learn to solve this issue?
 ################################
 ####### PARAMETERS #############
-SAMPLE_FRAC = 1_00
+SAMPLE_FRAC = 1_000
 ITERS = 20_0
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
@@ -202,13 +202,13 @@ def create_meta_data(test, samples, boots):
 
         for feat in ca_features.columns:
             # Michigan
-            ks = psi(ca_features[feat], aux[feat])
-            sh = psi(shap_test[feat], shap_values[feat])
+            ks = ca_features[feat].mean() - aux[feat].mean()
+            sh = shap_test[feat].mean(), shap_values[feat].mean()
 
             row.append(ks)
             row_shap.append(sh)
         # Target shift
-        ks_target_shift = wasserstein_distance(preds_ca, preds)
+        ks_target_shift = preds_ca.mean() - preds.mean()
         row_target_shift.append(ks_target_shift)
         # Save results
         train_shap[i] = row_shap
@@ -237,24 +237,30 @@ def create_meta_data(test, samples, boots):
     )
 
 
-input_tr, shap_tr, output_tr, model_error_tr, atc_scores = create_meta_data(
+input_tr, shap_tr, output_tr, model_error_tr_, atc_scores = create_meta_data(
     mi_full, SAMPLE_FRAC, ITERS
 )
 # %%
+# Convert in classification
+model_error_tr = np.where(model_error_tr_ < -0.02, 1, 0)
+sns.kdeplot(model_error_tr)
+# %%
 estimators = defaultdict()
 X_tr, X_te, y_tr, y_te = train_test_split(
-    output_tr, model_error_tr, test_size=0.33, random_state=42
+    output_tr, model_error_tr, test_size=0.3, random_state=42
 )
 dummy = DummyRegressor(strategy="constant", constant=0).fit(X_tr, y_tr)
-print("Dummy", mean_absolute_error(dummy.predict(X_te), y_te))
-clf = LinearRegression()
-# clf = XGBRegressor()
+print("Dummy", roc_auc_score(y_te, dummy.predict(X_te)))
+clf = LogisticRegression()
+#clf = XGBClassifier()
 clf.fit(X_tr, y_tr)
-print("CLF", mean_absolute_error(clf.predict(X_te), y_te))
+print("CLF", roc_auc_score(y_te, clf.predict_proba(X_te)[:,0]))
 # %%
 print("ATC", mean_absolute_error(pd.DataFrame(atc_scores.values()), model_error_tr))
 # %%
-sns.kdeplot(model_error_tr)
+
+# %%
+
 # %%
 input_data = defaultdict()
 shap_data = defaultdict()
@@ -293,7 +299,7 @@ dummy = DummyRegressor(strategy="constant", constant=0).fit(input_tr, model_erro
 clf_input = LinearRegression().fit(input_tr, model_error_tr)
 clf_output = LinearRegression().fit(output_tr, model_error_tr)
 clf_shap = LinearRegression().fit(shap_tr, model_error_tr)
-
+# %%
 input_results = []
 output_results = []
 shap_results = []
