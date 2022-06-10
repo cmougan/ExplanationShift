@@ -151,7 +151,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 1_000
-ITERS = 20_0
+ITERS = 5_00
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
@@ -203,7 +203,7 @@ def create_meta_data(test, samples, boots):
         for feat in ca_features.columns:
             # Michigan
             ks = ca_features[feat].mean() - aux[feat].mean()
-            sh = shap_test[feat].mean(), shap_values[feat].mean()
+            sh = shap_test[feat].mean() - shap_values[feat].mean()
 
             row.append(ks)
             row_shap.append(sh)
@@ -245,23 +245,36 @@ input_tr, shap_tr, output_tr, model_error_tr_, atc_scores = create_meta_data(
 model_error_tr = np.where(model_error_tr_ < -0.02, 1, 0)
 sns.kdeplot(model_error_tr)
 # %%
-estimators = defaultdict()
+# Input
 X_tr, X_te, y_tr, y_te = train_test_split(
-    output_tr, model_error_tr, test_size=0.3, random_state=42
-)
+        input_tr, model_error_tr, test_size=0.3, random_state=42
+    )
 dummy = DummyRegressor(strategy="constant", constant=0).fit(X_tr, y_tr)
 print("Dummy", roc_auc_score(y_te, dummy.predict(X_te)))
 clf = LogisticRegression()
-#clf = XGBClassifier()
+
 clf.fit(X_tr, y_tr)
-print("CLF", roc_auc_score(y_te, clf.predict_proba(X_te)[:,0]))
-# %%
-print("ATC", mean_absolute_error(pd.DataFrame(atc_scores.values()), model_error_tr))
-# %%
+print("Input", roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1]))
+
+# Shap
+X_tr, X_te, y_tr, y_te = train_test_split(
+        shap_tr, model_error_tr, test_size=0.3, random_state=42)
+clf = LogisticRegression()
+clf.fit(X_tr, y_tr)
+print("Shap", roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1]))
+
+# Output
+X_tr, X_te, y_tr, y_te = train_test_split(
+        output_tr, model_error_tr, test_size=0.3, random_state=42
+    )
+clf = LogisticRegression()
+clf.fit(X_tr, y_tr)
+print("Output", roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1]))
+# ATC
+print("ATC", roc_auc_score(model_error_tr,np.where(pd.DataFrame(atc_scores.values(),columns=['values']).values<-0.02,1,0)))
 
 # %%
-
-# %%
+estimators = defaultdict()
 input_data = defaultdict()
 shap_data = defaultdict()
 output_data = defaultdict()
@@ -289,16 +302,16 @@ for k in input_data.keys():
     sns.kdeplot(model_error_data[k], label=k)
 plt.legend()
 plt.show()
-# %%
 # Evaluating stage
 ## Input Data
 X_tr, X_te, y_tr, y_te = train_test_split(
     input_tr, model_error_tr, test_size=0.33, random_state=42
 )
 dummy = DummyRegressor(strategy="constant", constant=0).fit(input_tr, model_error_tr)
-clf_input = LinearRegression().fit(input_tr, model_error_tr)
-clf_output = LinearRegression().fit(output_tr, model_error_tr)
-clf_shap = LinearRegression().fit(shap_tr, model_error_tr)
+
+clf_input = XGBClassifier().fit(input_tr, model_error_tr)
+clf_output = XGBClassifier().fit(output_tr, model_error_tr)
+clf_shap = XGBClassifier().fit(shap_tr, model_error_tr)
 # %%
 input_results = []
 output_results = []
@@ -309,26 +322,19 @@ atc_res = []
 for state in input_data.keys():
     state_res.append(str(state))
     input_results.append(
-        mean_absolute_error(
-            clf_input.predict(input_data[state]), model_error_data[state]
-        )
+        roc_auc_score(np.where(model_error_data[state]<-0.02,1,0),clf_input.predict(input_data[state]))
     )
     output_results.append(
-        mean_absolute_error(
-            clf_output.predict(output_data[state]), model_error_data[state]
-        )
+        roc_auc_score(np.where(model_error_data[state]<-0.02,1,0), clf_output.predict(output_data[state]))
     )
     shap_results.append(
-        mean_absolute_error(clf_shap.predict(shap_data[state]), model_error_data[state])
+        roc_auc_score(np.where(model_error_data[state]<-0.02,1,0), clf_shap.predict(shap_data[state]))
     )
     dummy_results.append(
-        mean_absolute_error(dummy.predict(input_data[state]), model_error_data[state])
+        roc_auc_score(np.where(model_error_data[state]<-0.02,1,0), dummy.predict(input_data[state]))
     )
-    atc_res.append(
-        mean_absolute_error(
-            pd.DataFrame(atc_scores_data[state].values()), model_error_data[state]
-        )
-    )
+    atc_res.append(roc_auc_score(np.where(model_error_data[state]<-0.02,1,0),np.where(pd.DataFrame(atc_scores_data[state].values(),columns=['values']).values<-0.02,1,0)))
+    #atc_res.append(roc_auc_score(pd.DataFrame(np.where(model_error_data[state]<-0.02,1,0), atc_scores_data[state].values())))
 
 
 # %%
