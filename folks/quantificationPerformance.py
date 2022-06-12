@@ -10,10 +10,8 @@ from folktables import (
     ACSPublicCoverage,
     ACSTravelTime,
 )
-
 import pandas as pd
 from collections import defaultdict
-from scipy.stats import kstest, wasserstein_distance
 import seaborn as sns
 
 sns.set_style("whitegrid")
@@ -23,25 +21,14 @@ import sys
 import matplotlib.pyplot as plt
 
 # Scikit-Learn
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import (
-    GradientBoostingClassifier,
-    RandomForestClassifier,
-    RandomForestRegressor,
-)
-from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.linear_model import LogisticRegression, Lasso, LinearRegression
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import (
     accuracy_score,
     roc_auc_score,
-    mean_squared_error,
-    mean_absolute_error,
-    mean_absolute_percentage_error,
 )
 from sklearn.dummy import DummyRegressor
-from sklearn.svm import SVC, SVR
+
 from sklearn.model_selection import train_test_split
 
 # Specific packages
@@ -54,7 +41,6 @@ from tqdm import tqdm
 import sys
 
 sys.path.append("../")
-from fairtools.utils import loop_estimators_fairness, psi, loop_estimators
 from ATC_opt import ATC
 
 # Seeding
