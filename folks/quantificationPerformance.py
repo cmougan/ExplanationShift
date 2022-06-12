@@ -56,12 +56,11 @@ ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 # %%
 states = [
     "MI",
+]
+nooo = [
     "TN",
     "CT",
     "OH",
-
-]
-nooo = [
     "NE",
     "IL",
     "FL",
@@ -133,7 +132,6 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-mean
 ITERS = 1_0
 THRES = -0.05
 # Init
@@ -324,4 +322,3 @@ fig = px.choropleth(
 )
 fig.show()
 fig.write_image("images/best_method.png")
-
