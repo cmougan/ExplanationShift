@@ -229,7 +229,7 @@ def create_meta_data(test, samples, boots):
 # %%
 res = defaultdict(list)
 # Loop throug each state
-for state in states:
+for state in tqdm(states):
     print(state)
     ## Lets add the target to ease the sampling
     data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
@@ -291,7 +291,7 @@ plt.show()
 # %%
 aux = df.copy()
 best = []
-for state in tqdm(df.index.unique(), len(df.index.unique())):
+for state in df.index.unique():
     aux_state = aux[aux.index == state]
     # Estimators
     input = aux_state["Input Shift"].values
