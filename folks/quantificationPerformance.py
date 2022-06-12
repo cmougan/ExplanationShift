@@ -57,14 +57,15 @@ ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 states = [
     "MI",
     "TN",
-    "CT",
+
+]
+
+nooo = [
+        "CT",
     "OH",
     "NE",
     "IL",
     "FL",
-]
-
-nooo = [
     "OK",
     "PA",
     "KS",
@@ -133,7 +134,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-ITERS = 1_000
+ITERS = 1_0
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
@@ -264,4 +265,50 @@ for state in states:
     )
     res[state] = [input_results, shap_results, output_results, atc_results]
 # %%
-pd.DataFrame(res)
+df = pd.DataFrame(data = res).T
+df.columns = ['Input Shift','Explanation Shift','Output Shift','ATC']
+# %%
+plt.figure()
+sns.barplot(y=df.mean().values, x=df.columns,ci=0.1, capsize=.2,palette="RdBu_r")
+plt.axhline(0.5, color="black", linestyle="--")
+plt.ylim(0.4,0.7)
+plt.savefig("images/shap_shift.png")
+plt.show()
+# %%
+aux = df.copy()
+best = []
+for state in df.index.unique():
+    aux_state = aux[aux.index == state]
+    # Estimators
+    input = aux_state['Input Shift'].values
+    output = aux_state['Output Shift'].values
+    exp = aux_state['Explanation Shift'].values
+    atc_ = aux_state['ATC'].values
+
+    d = {
+        "Distribution Shift": input,
+        "Prediction Shift": output,
+        "Explanation Shift": exp,
+        "ATC": atc_,
+    }
+
+    best.append([state, max(d, key=d.get)])
+
+best = pd.DataFrame(best, columns=["state", "data"])
+# %%
+import plotly.express as px
+fig = px.choropleth(
+    best,
+    locations="state",
+    locationmode="USA-states",
+    color="data",
+    # color_continuous_scale="Reds",
+    scope="usa",
+    #hover_name="state",
+    # hover_data=["error_ood"],
+)
+fig.show()
+fig.write_image("images/best_method.png")
+
+# %%
+
