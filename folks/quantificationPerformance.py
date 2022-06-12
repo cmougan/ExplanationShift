@@ -57,12 +57,11 @@ ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 states = [
     "MI",
     "TN",
-
+    "CT",
+    "OH",
 ]
 
 nooo = [
-        "CT",
-    "OH",
     "NE",
     "IL",
     "FL",
@@ -134,7 +133,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-ITERS = 1_0
+ITERS = 1_000
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
@@ -146,6 +145,17 @@ explainer = shap.LinearExplainer(
 )
 shap_test = explainer(ca_features)
 shap_test = pd.DataFrame(shap_test.values, columns=ca_features.columns)
+
+
+def my_explode(data):
+    """
+    Explode a dataframe with list in columns into a dataframe.
+    Loses the name columns
+    """
+    aux = pd.DataFrame()
+    for col in data.columns:
+        aux = pd.concat([aux, pd.DataFrame(data[col].to_list())], axis=1)
+    return aux
 
 
 ## Meta data function
@@ -180,9 +190,18 @@ def create_meta_data(test, samples, boots):
         shap_values = pd.DataFrame(shap_values.values, columns=ca_features.columns)
 
         for feat in ca_features.columns:
-            # Michigan
-            ks = ca_features[feat].mean() - aux[feat].mean()
-            sh = shap_test[feat].mean() - shap_values[feat].mean()
+            ks = [
+                ca_features[feat].mean() - aux[feat].mean(),
+                ca_features[feat].quantile(q=0.5) - aux[feat].quantile(q=0.5),
+                ca_features[feat].quantile(q=0.25) - aux[feat].quantile(q=0.25),
+                ca_features[feat].quantile(q=0.75) - aux[feat].quantile(q=0.75),
+            ]
+            sh = [
+                shap_test[feat].mean() - shap_values[feat].mean(),
+                shap_test[feat].quantile(q=0.25) - shap_values[feat].quantile(q=0.25),
+                shap_test[feat].quantile(q=0.5) - shap_values[feat].quantile(q=0.5),
+                shap_test[feat].quantile(q=0.75) - shap_values[feat].quantile(q=0.75),
+            ]
 
             row.append(ks)
             row_shap.append(sh)
@@ -233,6 +252,9 @@ for state in states:
     input_tr, shap_tr, output_tr, model_error_tr_, atc_scores = create_meta_data(
         mi_full, SAMPLE_FRAC, ITERS
     )
+    input_tr = my_explode(input_tr)
+    shap_tr = my_explode(shap_tr)
+
     # Convert in classification
     model_error_tr = np.where(model_error_tr_ < -0.05, 1, 0)
     # Input
@@ -265,13 +287,13 @@ for state in states:
     )
     res[state] = [input_results, shap_results, output_results, atc_results]
 # %%
-df = pd.DataFrame(data = res).T
-df.columns = ['Input Shift','Explanation Shift','Output Shift','ATC']
+df = pd.DataFrame(data=res).T
+df.columns = ["Input Shift", "Explanation Shift", "Output Shift", "ATC"]
 # %%
 plt.figure()
-sns.barplot(y=df.mean().values, x=df.columns,ci=0.1, capsize=.2,palette="RdBu_r")
+sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
 plt.axhline(0.5, color="black", linestyle="--")
-plt.ylim(0.4,0.7)
+plt.ylim(0.4, 0.7)
 plt.savefig("images/shap_shift.png")
 plt.show()
 # %%
@@ -280,10 +302,10 @@ best = []
 for state in df.index.unique():
     aux_state = aux[aux.index == state]
     # Estimators
-    input = aux_state['Input Shift'].values
-    output = aux_state['Output Shift'].values
-    exp = aux_state['Explanation Shift'].values
-    atc_ = aux_state['ATC'].values
+    input = aux_state["Input Shift"].values
+    output = aux_state["Output Shift"].values
+    exp = aux_state["Explanation Shift"].values
+    atc_ = aux_state["ATC"].values
 
     d = {
         "Distribution Shift": input,
@@ -297,6 +319,7 @@ for state in df.index.unique():
 best = pd.DataFrame(best, columns=["state", "data"])
 # %%
 import plotly.express as px
+
 fig = px.choropleth(
     best,
     locations="state",
@@ -304,11 +327,8 @@ fig = px.choropleth(
     color="data",
     # color_continuous_scale="Reds",
     scope="usa",
-    #hover_name="state",
+    # hover_name="state",
     # hover_data=["error_ood"],
 )
 fig.show()
 fig.write_image("images/best_method.png")
-
-# %%
-
