@@ -41,6 +41,7 @@ from tqdm import tqdm
 import sys
 
 sys.path.append("../")
+sys.path.append("/home/jupyter/ExplanationShift")
 from ATC_opt import ATC
 
 # Seeding
