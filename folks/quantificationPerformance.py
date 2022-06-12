@@ -57,10 +57,11 @@ ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 states = [
     "MI",
     "TN",
-]
-nooo = [
     "CT",
     "OH",
+
+]
+nooo = [
     "NE",
     "IL",
     "FL",
@@ -132,6 +133,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
+mean
 ITERS = 1_0
 THRES = -0.05
 # Init
@@ -145,6 +147,17 @@ explainer = shap.LinearExplainer(
 )
 shap_test = explainer(ca_features)
 shap_test = pd.DataFrame(shap_test.values, columns=ca_features.columns)
+
+
+def my_explode(data):
+    """
+    Explode a dataframe with list in columns into a dataframe.
+    Loses the name columns
+    """
+    aux = pd.DataFrame()
+    for col in data.columns:
+        aux = pd.concat([aux, pd.DataFrame(data[col].to_list())], axis=1)
+    return aux
 
 
 ## Meta data function
@@ -231,6 +244,9 @@ for state in states:
     input_tr, shap_tr, output_tr, model_error_tr_, atc_scores = create_meta_data(
         mi_full, SAMPLE_FRAC, ITERS
     )
+    input_tr = my_explode(input_tr)
+    shap_tr = my_explode(shap_tr)
+
     # Convert in classification
     model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
     # Input
@@ -309,4 +325,3 @@ fig = px.choropleth(
 fig.show()
 fig.write_image("images/best_method.png")
 
-# %%
