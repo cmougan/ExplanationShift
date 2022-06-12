@@ -57,8 +57,8 @@ ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 # %%
 states = [
     "MI",
-]
-nooo = [
+    # ]
+    # nooo = [
     "TN",
     "CT",
     "OH",
@@ -133,7 +133,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-ITERS = 1_0
+ITERS = 5_000
 THRES = -0.05
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
@@ -291,7 +291,7 @@ plt.show()
 # %%
 aux = df.copy()
 best = []
-for state in tqdm(df.index.unique(),len(df.index.unique())):
+for state in tqdm(df.index.unique(), len(df.index.unique())):
     aux_state = aux[aux.index == state]
     # Estimators
     input = aux_state["Input Shift"].values
