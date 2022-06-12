@@ -59,8 +59,8 @@ states = [
     "TN",
     "CT",
     "OH",
-]
 
+]
 nooo = [
     "NE",
     "IL",
@@ -133,7 +133,9 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-ITERS = 1_000
+mean
+ITERS = 1_0
+THRES = -0.05
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
@@ -190,18 +192,8 @@ def create_meta_data(test, samples, boots):
         shap_values = pd.DataFrame(shap_values.values, columns=ca_features.columns)
 
         for feat in ca_features.columns:
-            ks = [
-                ca_features[feat].mean() - aux[feat].mean(),
-                ca_features[feat].quantile(q=0.5) - aux[feat].quantile(q=0.5),
-                ca_features[feat].quantile(q=0.25) - aux[feat].quantile(q=0.25),
-                ca_features[feat].quantile(q=0.75) - aux[feat].quantile(q=0.75),
-            ]
-            sh = [
-                shap_test[feat].mean() - shap_values[feat].mean(),
-                shap_test[feat].quantile(q=0.25) - shap_values[feat].quantile(q=0.25),
-                shap_test[feat].quantile(q=0.5) - shap_values[feat].quantile(q=0.5),
-                shap_test[feat].quantile(q=0.75) - shap_values[feat].quantile(q=0.75),
-            ]
+            ks = ca_features[feat].mean() - aux[feat].mean()
+            sh = shap_test[feat].mean() - shap_values[feat].mean()
 
             row.append(ks)
             row_shap.append(sh)
@@ -256,7 +248,7 @@ for state in states:
     shap_tr = my_explode(shap_tr)
 
     # Convert in classification
-    model_error_tr = np.where(model_error_tr_ < -0.05, 1, 0)
+    model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
     # Input
     X_tr, X_te, y_tr, y_te = train_test_split(
         input_tr, model_error_tr, test_size=0.3, random_state=42
@@ -280,7 +272,7 @@ for state in states:
     atc_results = roc_auc_score(
         model_error_tr,
         np.where(
-            pd.DataFrame(atc_scores.values(), columns=["values"]).values < -0.02,
+            pd.DataFrame(atc_scores.values(), columns=["values"]).values < THRES,
             0,
             1,
         ),
@@ -332,3 +324,4 @@ fig = px.choropleth(
 )
 fig.show()
 fig.write_image("images/best_method.png")
+
