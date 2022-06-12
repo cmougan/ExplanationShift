@@ -57,11 +57,10 @@ ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 states = [
     "MI",
     "TN",
-
 ]
 
 nooo = [
-        "CT",
+    "CT",
     "OH",
     "NE",
     "IL",
@@ -135,6 +134,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
 ITERS = 1_0
+THRES = -0.05
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
@@ -180,7 +180,6 @@ def create_meta_data(test, samples, boots):
         shap_values = pd.DataFrame(shap_values.values, columns=ca_features.columns)
 
         for feat in ca_features.columns:
-            # Michigan
             ks = ca_features[feat].mean() - aux[feat].mean()
             sh = shap_test[feat].mean() - shap_values[feat].mean()
 
@@ -234,7 +233,7 @@ for state in states:
         mi_full, SAMPLE_FRAC, ITERS
     )
     # Convert in classification
-    model_error_tr = np.where(model_error_tr_ < -0.05, 1, 0)
+    model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
     # Input
     X_tr, X_te, y_tr, y_te = train_test_split(
         input_tr, model_error_tr, test_size=0.3, random_state=42
@@ -258,20 +257,20 @@ for state in states:
     atc_results = roc_auc_score(
         model_error_tr,
         np.where(
-            pd.DataFrame(atc_scores.values(), columns=["values"]).values < -0.02,
+            pd.DataFrame(atc_scores.values(), columns=["values"]).values < THRES,
             0,
             1,
         ),
     )
     res[state] = [input_results, shap_results, output_results, atc_results]
 # %%
-df = pd.DataFrame(data = res).T
-df.columns = ['Input Shift','Explanation Shift','Output Shift','ATC']
+df = pd.DataFrame(data=res).T
+df.columns = ["Input Shift", "Explanation Shift", "Output Shift", "ATC"]
 # %%
 plt.figure()
-sns.barplot(y=df.mean().values, x=df.columns,ci=0.1, capsize=.2,palette="RdBu_r")
+sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
 plt.axhline(0.5, color="black", linestyle="--")
-plt.ylim(0.4,0.7)
+plt.ylim(0.4, 0.7)
 plt.savefig("images/shap_shift.png")
 plt.show()
 # %%
@@ -280,10 +279,10 @@ best = []
 for state in df.index.unique():
     aux_state = aux[aux.index == state]
     # Estimators
-    input = aux_state['Input Shift'].values
-    output = aux_state['Output Shift'].values
-    exp = aux_state['Explanation Shift'].values
-    atc_ = aux_state['ATC'].values
+    input = aux_state["Input Shift"].values
+    output = aux_state["Output Shift"].values
+    exp = aux_state["Explanation Shift"].values
+    atc_ = aux_state["ATC"].values
 
     d = {
         "Distribution Shift": input,
@@ -297,6 +296,7 @@ for state in df.index.unique():
 best = pd.DataFrame(best, columns=["state", "data"])
 # %%
 import plotly.express as px
+
 fig = px.choropleth(
     best,
     locations="state",
@@ -304,11 +304,10 @@ fig = px.choropleth(
     color="data",
     # color_continuous_scale="Reds",
     scope="usa",
-    #hover_name="state",
+    # hover_name="state",
     # hover_data=["error_ood"],
 )
 fig.show()
 fig.write_image("images/best_method.png")
 
 # %%
-
