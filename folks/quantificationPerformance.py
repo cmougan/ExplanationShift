@@ -280,6 +280,7 @@ for state in states:
 # %%
 df = pd.DataFrame(data=res).T
 df.columns = ["Input Shift", "Explanation Shift", "Output Shift", "ATC"]
+df.to_csv("results.csv")
 # %%
 plt.figure()
 sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
@@ -290,7 +291,7 @@ plt.show()
 # %%
 aux = df.copy()
 best = []
-for state in df.index.unique():
+for state in tqdm(df.index.unique(),len(df.index.unique())):
     aux_state = aux[aux.index == state]
     # Estimators
     input = aux_state["Input Shift"].values
