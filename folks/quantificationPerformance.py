@@ -58,7 +58,6 @@ states = [
     "MI",
     "TN",
 ]
-
 nooo = [
     "CT",
     "OH",
