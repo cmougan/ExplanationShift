@@ -238,8 +238,6 @@ for state in states:
     X_tr, X_te, y_tr, y_te = train_test_split(
         input_tr, model_error_tr, test_size=0.3, random_state=42
     )
-    dummy = DummyRegressor(strategy="constant", constant=0).fit(X_tr, y_tr)
-    print("Dummy", roc_auc_score(y_te, dummy.predict(X_te)))
     clf = LogisticRegression()
     clf.fit(X_tr, y_tr)
     input_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
