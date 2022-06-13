@@ -16,7 +16,7 @@ random.seed(0)
 # %%
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
-ca_data = data_source.get_data(states=["PR"], download=True)
+ca_data = data_source.get_data(states=["HI"], download=True)
 ca_features, ca_labels, ca_group = ACSIncome.df_to_numpy(ca_data)
 
 # OOD
