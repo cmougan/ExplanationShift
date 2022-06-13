@@ -50,9 +50,9 @@ print("Test EO", white_tpr - black_tpr)
 
 # %%
 ## Model performance
-print('Train')
+print("Train")
 print(roc_auc_score(preds_ca, ca_labels))
-print('Test')
+print("Test")
 print(roc_auc_score(preds_mi, mi_labels))
 
 # %%

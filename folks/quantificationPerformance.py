@@ -50,7 +50,7 @@ random.seed(0)
 # %%
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
-ca_data = data_source.get_data(states=["CA"], download=True)
+ca_data = data_source.get_data(states=["PR"], download=True)
 ca_features, ca_labels, ca_group = ACSEmployment.df_to_numpy(ca_data)
 ## Conver to DF
 ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
@@ -81,8 +81,8 @@ states = [
     "WI",
     "CA",
     "MO",
-]
-nooo = [
+    # ]
+    # nooo = [
     "MD",
     "NV",
     "HI",
@@ -229,62 +229,67 @@ res = defaultdict(list)
 # Loop throug each state
 for state in tqdm(states):
     print(state)
-    ## Lets add the target to ease the sampling
-    data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
-    mi_data = data_source.get_data(states=[state], download=True)
-    mi_features, mi_labels, mi_group = ACSEmployment.df_to_numpy(mi_data)
-    mi_features = pd.DataFrame(mi_features, columns=ACSEmployment.features)
-    mi_full = mi_features.copy()
-    mi_full["group"] = mi_group
-    mi_full["target"] = mi_labels
+    try:
+        ## Lets add the target to ease the sampling
+        data_source = ACSDataSource(
+            survey_year="2018", horizon="1-Year", survey="person"
+        )
+        mi_data = data_source.get_data(states=[state], download=True)
+        mi_features, mi_labels, mi_group = ACSEmployment.df_to_numpy(mi_data)
+        mi_features = pd.DataFrame(mi_features, columns=ACSEmployment.features)
+        mi_full = mi_features.copy()
+        mi_full["group"] = mi_group
+        mi_full["target"] = mi_labels
 
-    input_tr, shap_tr, output_tr, model_error_tr_, atc_scores = create_meta_data(
-        mi_full, SAMPLE_FRAC, ITERS
-    )
-    input_tr = my_explode(input_tr)
-    shap_tr = my_explode(shap_tr)
+        input_tr, shap_tr, output_tr, model_error_tr_, atc_scores = create_meta_data(
+            mi_full, SAMPLE_FRAC, ITERS
+        )
+        input_tr = my_explode(input_tr)
+        shap_tr = my_explode(shap_tr)
 
-    # Convert in classification
-    model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
-    # Input
-    X_tr, X_te, y_tr, y_te = train_test_split(
-        input_tr, model_error_tr, test_size=0.3, random_state=42
-    )
-    clf = LogisticRegression()
-    clf.fit(X_tr, y_tr)
-    input_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
-    # Shap
-    X_tr, X_te, y_tr, y_te = train_test_split(
-        shap_tr, model_error_tr, test_size=0.3, random_state=42
-    )
-    clf.fit(X_tr, y_tr)
-    shap_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
-    # Output
-    X_tr, X_te, y_tr, y_te = train_test_split(
-        output_tr, model_error_tr, test_size=0.3, random_state=42
-    )
-    clf.fit(X_tr, y_tr)
-    output_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
-    # ATC
-    atc_results = roc_auc_score(
-        model_error_tr,
-        np.where(
-            pd.DataFrame(atc_scores.values(), columns=["values"]).values < THRES,
-            0,
-            1,
-        ),
-    )
-    res[state] = [input_results, shap_results, output_results, atc_results]
+        # Convert in classification
+        model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
+        # Input
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            input_tr, model_error_tr, test_size=0.3, random_state=42
+        )
+        clf = LogisticRegression()
+        clf.fit(X_tr, y_tr)
+        input_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
+        # Shap
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            shap_tr, model_error_tr, test_size=0.3, random_state=42
+        )
+        clf.fit(X_tr, y_tr)
+        shap_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
+        # Output
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            output_tr, model_error_tr, test_size=0.3, random_state=42
+        )
+        clf.fit(X_tr, y_tr)
+        output_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
+        # ATC
+        atc_results = roc_auc_score(
+            model_error_tr,
+            np.where(
+                pd.DataFrame(atc_scores.values(), columns=["values"]).values < THRES,
+                0,
+                1,
+            ),
+        )
+        res[state] = [input_results, shap_results, output_results, atc_results]
+    except:
+        print(state, "failed")
 # %%
 df = pd.DataFrame(data=res).T
 df.columns = ["Input Shift", "Explanation Shift", "Output Shift", "ATC"]
-df.to_csv("results.csv")
+df.to_csv("results_PR.csv")
 # %%
 plt.figure()
 sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
 plt.axhline(0.5, color="black", linestyle="--")
 plt.ylim(0.4, 0.7)
-plt.savefig("images/shap_shift.png")
+plt.savefig("images/shap_shift_PR.png")
 plt.show()
 # %%
 aux = df.copy()
@@ -321,4 +326,4 @@ fig = px.choropleth(
     # hover_data=["error_ood"],
 )
 fig.show()
-fig.write_image("images/best_method.png")
+fig.write_image("images/best_method_PR.png")
