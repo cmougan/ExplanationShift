@@ -10,10 +10,8 @@ from folktables import (
     ACSPublicCoverage,
     ACSTravelTime,
 )
-
 import pandas as pd
 from collections import defaultdict
-from scipy.stats import kstest, wasserstein_distance
 import seaborn as sns
 
 sns.set_style("whitegrid")
@@ -23,23 +21,15 @@ import sys
 import matplotlib.pyplot as plt
 
 # Scikit-Learn
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.linear_model import LogisticRegression, Lasso, LinearRegression
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import (
     accuracy_score,
     roc_auc_score,
-    mean_squared_error,
-    mean_absolute_error,
-    mean_absolute_percentage_error,
 )
 from sklearn.dummy import DummyRegressor
-from sklearn.svm import SVR
+
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 
 # Specific packages
 from xgboost import XGBRegressor, XGBClassifier
@@ -51,8 +41,7 @@ from tqdm import tqdm
 import sys
 
 sys.path.append("../")
-from fairtools.utils import loop_estimators_fairness, psi, loop_estimators
-from ATC_opt import ATC
+sys.path.append("/home/jupyter/ExplanationShift")
 
 # Seeding
 np.random.seed(0)
@@ -60,11 +49,17 @@ random.seed(0)
 # %%
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
-ca_data = data_source.get_data(states=["CA"], download=True)
+ca_data = data_source.get_data(states=["HI"], download=True)
+ca_features, ca_labels, ca_group = ACSPublicCoverage.df_to_numpy(ca_data)
+## Conver to DF
+ca_features = pd.DataFrame(ca_features, columns=ACSPublicCoverage.features)
+ca_features['group'] = ca_group
 # %%
 states = [
     "MI",
     "TN",
+]
+nooo = [
     "CT",
     "OH",
     "NE",
@@ -73,9 +68,6 @@ states = [
     "OK",
     "PA",
     "KS",
-]
-
-nooo = [
     "IA",
     "KY",
     "NY",
@@ -105,10 +97,8 @@ nooo = [
     "AZ",
     "VA",
     "MA",
-    "AA",
     "NC",
     "SC",
-    "DC",
     "VT",
     "AR",
     "WA",
@@ -121,73 +111,218 @@ nooo = [
     "PR",
 ]
 
-data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
-
-# %%
-ca_features, ca_labels, ca_group = ACSEmployment.df_to_numpy(ca_data)
-
-## Conver to DF
-ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 
 # %%
 # Modeling
 # model = XGBClassifier(verbosity=0, silent=True, use_label_encoder=False, njobs=1)
 model = LogisticRegression()
 # Train on CA data
-X = ca_features.copy()
-X["group"] = ca_group
-preds_ca = cross_val_predict(model, X, ca_labels, cv=3, method="predict_proba")[:, 1]
-model.fit(X, ca_labels)
+preds_ca = cross_val_predict(
+    model, ca_features, ca_labels, cv=3, method="predict_proba"
+)[:, 1]
+model.fit(ca_features, ca_labels)
 
 # Fairness in training data
 white_tpr = np.mean(preds_ca[(ca_labels == 1) & (ca_group == 1)])
 black_tpr = np.mean(preds_ca[(ca_labels == 1) & (ca_group == 2)])
 eof_tr = white_tpr - black_tpr
 
-# xAI
+# %%
+## Can we learn to solve this issue?
+################################
+####### PARAMETERS #############
+SAMPLE_FRAC = 1000
+ITERS = 5_000
+THRES = -0.05
+# Init
+train_error = accuracy_score(ca_labels, np.round(preds_ca))
+train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
+
+# xAI Train
 # explainer = shap.Explainer(model)
-explainer = shap.LinearExplainer(model, X, feature_dependence="correlation_dependent")
-shap_ca = explainer(X)
-shap_ca = pd.DataFrame(shap_ca.values, columns=X.columns)
+explainer = shap.LinearExplainer(
+    model, ca_features, feature_dependence="correlation_dependent"
+)
+shap_test = explainer(ca_features)
+shap_test = pd.DataFrame(shap_test.values, columns=ca_features.columns)
+
+
+def my_explode(data):
+    """
+    Explode a dataframe with list in columns into a dataframe.
+    Loses the name columns
+    """
+    aux = pd.DataFrame()
+    for col in data.columns:
+        aux = pd.concat([aux, pd.DataFrame(data[col].to_list())], axis=1)
+    return aux
+
+
+## Meta data function
+def create_meta_data(test, samples, boots):
+    # Init
+    train = defaultdict()
+    train_target_shift = defaultdict()
+    performance = defaultdict()
+    train_shap = defaultdict()
+
+    for i in tqdm(range(0, boots), leave=False, desc="Test Bootstrap", position=1):
+        # Initiate
+        row = []
+        row_target_shift = []
+        row_shap = []
+
+        # Sampling
+        aux = test.sample(n=samples, replace=True)
+
+        # Performance calculation
+        preds = model.predict_proba(aux.drop(columns=["target"]))[:,1]
+        white_tpr = np.mean(preds[(aux.target == 1) & (aux.group == 1)])
+        black_tpr = np.mean(preds[(aux.target) & (aux.group == 2)])
+        eof_te = white_tpr - black_tpr
+        performance[i] = eof_tr - eof_te
+
+        # Shap values calculation
+        shap_values = explainer(aux.drop(columns=["target"]))
+        shap_values = pd.DataFrame(shap_values.values, columns=ca_features.columns)
+
+        for feat in ca_features.columns:
+            ks = ca_features[feat].mean() - aux[feat].mean()
+            sh = shap_test[feat].mean() - shap_values[feat].mean()
+
+            row.append(ks)
+            row_shap.append(sh)
+        # Target shift
+        ks_target_shift = preds_ca.mean() - preds.mean()
+        row_target_shift.append(ks_target_shift)
+        # Save results
+        train_shap[i] = row_shap
+        train[i] = row
+        train_target_shift[i] = row_target_shift
+
+    ## Train (previous test)
+    train_df = pd.DataFrame(train).T
+    train_df.columns = ca_features.columns
+
+    train_shap_df = pd.DataFrame(train_shap).T
+    train_shap_df.columns = ca_features.columns
+    train_shap_df = train_shap_df.add_suffix("_shap")
+
+    train_target_shift_df = pd.DataFrame(train_target_shift, index=[0]).T
+    train_target_shift_df.columns = ["target"]
+
+    # On the target
+    performance = pd.DataFrame(performance, index=[0]).T.values
+    return (
+        train_df,
+        train_shap_df,
+        train_target_shift_df,
+        performance.squeeze(),
+    )
+
 
 # %%
-# Other states
-data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
-results = defaultdict()
+res = defaultdict(list)
+# Loop throug each state
 for state in tqdm(states):
-    mi_data = data_source.get_data(states=[state], download=True)
-    mi_features, mi_labels, mi_group = ACSEmployment.df_to_numpy(mi_data)
-    mi_features = pd.DataFrame(mi_features, columns=ACSEmployment.features)
-    X_te = mi_features.copy()
-    X_te["group"] = mi_group
-    # Test on MI data
-    preds_mi = model.predict_proba(X_te)[:, 1]
+    print(state)
+    try:
+        ## Lets add the target to ease the sampling
+        data_source = ACSDataSource(
+            survey_year="2018", horizon="1-Year", survey="person"
+        )
+        mi_data = data_source.get_data(states=[state], download=True)
+        mi_features, mi_labels, mi_group = ACSPublicCoverage.df_to_numpy(mi_data)
+        mi_features = pd.DataFrame(mi_features, columns=ACSPublicCoverage.features)
+        mi_full = mi_features.copy()
+        mi_full["group"] = mi_group
+        mi_full["target"] = mi_labels
+        input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
+            mi_full, SAMPLE_FRAC, ITERS
+        )
+        input_tr = my_explode(input_tr)
+        shap_tr = my_explode(shap_tr)
 
-    # Shap
-    shap_mi = explainer(X_te)
-    shap_mi = pd.DataFrame(shap_mi.values, columns=X_te.columns)
+        # Convert in classification
+        model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
+        # Input
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            input_tr, model_error_tr, test_size=0.3, random_state=42
+        )
+        clf = LogisticRegression()
+        clf.fit(X_tr, y_tr)
+        input_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
+        # Shap
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            shap_tr, model_error_tr, test_size=0.3, random_state=42
+        )
+        clf.fit(X_tr, y_tr)
+        shap_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
+        # Output
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            output_tr, model_error_tr, test_size=0.3, random_state=42
+        )
+        clf.fit(X_tr, y_tr)
+        output_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
 
-    # DP
-    ks = kstest(preds_mi[mi_group == 1], preds_mi[mi_group == 2]).statistic
-
-    # EOF
-    white_tpr = np.mean(preds_mi[(mi_labels == 1) & (mi_group == 1)])
-    black_tpr = np.mean(preds_mi[(mi_labels == 1) & (mi_group == 2)])
-    eof_mi = white_tpr - black_tpr
-
-    # Shap
-    shap_diff = np.mean(shap_mi["group"][(mi_group == 2)])
-    results[state] = [ks, eof_mi, shap_diff]
+        res[state] = [input_results, shap_results, output_results]
+    except:
+        print(state, "failed")
 # %%
-
-res = pd.DataFrame(results).T
-# res = pd.DataFrame(StandardScaler().fit_transform(res))
-res.columns = ["DP", "EOF", "SHAP"]
-res["SHAP"] = res["SHAP"] * 30
-res.sort_values(by="SHAP", ascending=False).plot()
+df = pd.DataFrame(data=res).T
+df.columns = ["Input Shift", "Explanation Shift", "Output Shift"]
+df.to_csv("results_PR.csv")
 # %%
-
-res.describe()
+plt.figure()
+sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
+plt.axhline(0.5, color="black", linestyle="--")
+plt.ylim(0.4, 0.7)
+plt.savefig("images/shap_shift_PR.png")
+plt.show()
 # %%
-res
+aux = df.copy()
+best = []
+for state in df.index.unique():
+    aux_state = aux[aux.index == state]
+    # Estimators
+    input = aux_state["Input Shift"].values
+    output = aux_state["Output Shift"].values
+    exp = aux_state["Explanation Shift"].values
+
+    d = {
+        "Distribution Shift": input,
+        "Prediction Shift": output,
+        "Explanation Shift": exp,
+    }
+
+    best.append([state, max(d, key=d.get)])
+
+best = pd.DataFrame(best, columns=["state", "data"])
+# %%
+import plotly.express as px
+
+fig = px.choropleth(
+    best,
+    locations="state",
+    locationmode="USA-states",
+    color="data",
+    # color_continuous_scale="Reds",
+    scope="usa",
+    # hover_name="state",
+    # hover_data=["error_ood"],
+)
+fig.show()
+fig.write_image("images/best_method_PR.png")
+# %%
+input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
+            mi_full, SAMPLE_FRAC, ITERS
+        )
+# %%
+sns.kdeplot(model_error_tr_)
+# %%
+np.mean(preds[(aux.target == 1)])
+# %%
+print(np.mean(preds_ca[(ca_labels == 1) & (ca_group == 1)]))
+# %%
+print(np.mean(preds_ca[(ca_labels == 1)]))
 # %%
