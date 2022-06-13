@@ -57,8 +57,6 @@ ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 # %%
 states = [
     "MI",
-    # ]
-    # nooo = [
     "TN",
     "CT",
     "OH",
@@ -83,6 +81,8 @@ states = [
     "WI",
     "CA",
     "MO",
+]
+nooo = [
     "MD",
     "NV",
     "HI",
