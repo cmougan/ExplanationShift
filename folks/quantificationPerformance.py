@@ -50,7 +50,7 @@ random.seed(0)
 # %%
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
-ca_data = data_source.get_data(states=["PR"], download=True)
+ca_data = data_source.get_data(states=["HI"], download=True)
 ca_features, ca_labels, ca_group = ACSEmployment.df_to_numpy(ca_data)
 ## Conver to DF
 ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
@@ -58,6 +58,8 @@ ca_features = pd.DataFrame(ca_features, columns=ACSEmployment.features)
 states = [
     "MI",
     "TN",
+    # ]
+    # nooo = [
     "CT",
     "OH",
     "NE",
@@ -81,8 +83,6 @@ states = [
     "WI",
     "CA",
     "MO",
-    # ]
-    # nooo = [
     "MD",
     "NV",
     "HI",
@@ -327,3 +327,5 @@ fig = px.choropleth(
 )
 fig.show()
 fig.write_image("images/best_method_PR.png")
+# %%
+mo
