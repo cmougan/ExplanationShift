@@ -14,6 +14,7 @@ The experimental section is divided into two main parts. Experiments with synthe
 - Quantifying model degradation `distributionSamplingGaussian.py`
 
 ### Experiments on folks dataset
-- `samplingOOD.py`
+- `folks/states.py` Predictive performance and fairness comparison
+- `samplingOOD.py` 
 
 Inside the results folder the scripts that recompile the output of the above experiment and produce the visualizations used in the paper.
