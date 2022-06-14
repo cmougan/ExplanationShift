@@ -53,7 +53,7 @@ ca_data = data_source.get_data(states=["HI"], download=True)
 ca_features, ca_labels, ca_group = ACSPublicCoverage.df_to_numpy(ca_data)
 ## Conver to DF
 ca_features = pd.DataFrame(ca_features, columns=ACSPublicCoverage.features)
-ca_features['group'] = ca_group
+ca_features["group"] = ca_group
 # %%
 states = [
     "MI",
@@ -176,7 +176,7 @@ def create_meta_data(test, samples, boots):
         aux = test.sample(n=samples, replace=True)
 
         # Performance calculation
-        preds = model.predict_proba(aux.drop(columns=["target"]))[:,1]
+        preds = model.predict_proba(aux.drop(columns=["target"]))[:, 1]
         white_tpr = np.mean(preds[(aux.target == 1) & (aux.group == 1)])
         black_tpr = np.mean(preds[(aux.target) & (aux.group == 2)])
         eof_te = white_tpr - black_tpr
@@ -315,8 +315,8 @@ fig.show()
 fig.write_image("images/best_method_PR.png")
 # %%
 input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
-            mi_full, SAMPLE_FRAC, ITERS
-        )
+    mi_full, SAMPLE_FRAC, ITERS
+)
 # %%
 sns.kdeplot(model_error_tr_)
 # %%
