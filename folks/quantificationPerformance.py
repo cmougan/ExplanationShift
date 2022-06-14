@@ -51,9 +51,9 @@ random.seed(0)
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
 ca_data = data_source.get_data(states=["HI"], download=True)
-ca_features, ca_labels, ca_group = ACSTravelTime.df_to_numpy(ca_data)
+ca_features, ca_labels, ca_group = ACSMobility.df_to_numpy(ca_data)
 ## Conver to DF
-ca_features = pd.DataFrame(ca_features, columns=ACSTravelTime.features)
+ca_features = pd.DataFrame(ca_features, columns=ACSMobility.features)
 # %%
 states = [
     "MI",
@@ -131,7 +131,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-ITERS = 5_000
+ITERS = 10_000
 THRES = -0.05
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
@@ -235,8 +235,8 @@ for state in tqdm(states):
             survey_year="2018", horizon="1-Year", survey="person"
         )
         mi_data = data_source.get_data(states=[state], download=True)
-        mi_features, mi_labels, mi_group = ACSTravelTime.df_to_numpy(mi_data)
-        mi_features = pd.DataFrame(mi_features, columns=ACSTravelTime.features)
+        mi_features, mi_labels, mi_group = ACSMobility.df_to_numpy(mi_data)
+        mi_features = pd.DataFrame(mi_features, columns=ACSMobility.features)
         mi_full = mi_features.copy()
         mi_full["group"] = mi_group
         mi_full["target"] = mi_labels
@@ -327,3 +327,20 @@ fig = px.choropleth(
 )
 fig.show()
 fig.write_image("images/best_method_PR.png")
+# %%
+aux = df.reset_index().rename(columns={"index": "state"})
+fig = px.choropleth(
+    aux,
+    locations="state",
+    locationmode="USA-states",
+    color="Explanation Shift",
+    color_continuous_scale="Reds",
+    scope="usa",
+    hover_name="state",
+    hover_data=["Explanation Shift"],
+)
+fig.show()
+fig.write_image("images/performanceUS.png")
+# %%
+
+# %%
