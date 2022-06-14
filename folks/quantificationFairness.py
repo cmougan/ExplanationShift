@@ -27,7 +27,6 @@ from sklearn.metrics import (
     accuracy_score,
     roc_auc_score,
 )
-from sklearn.dummy import DummyRegressor
 
 from sklearn.model_selection import train_test_split
 
@@ -50,23 +49,27 @@ random.seed(0)
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
 ca_data = data_source.get_data(states=["HI"], download=True)
-ca_features, ca_labels, ca_group = ACSPublicCoverage.df_to_numpy(ca_data)
+ca_features, ca_labels, ca_group = ACSMobility.df_to_numpy(ca_data)
 ## Conver to DF
-ca_features = pd.DataFrame(ca_features, columns=ACSPublicCoverage.features)
+ca_features = pd.DataFrame(ca_features, columns=ACSMobility.features)
 ca_features["group"] = ca_group
 # %%
 states = [
+    "CA",
+    "PR",
+    "OK",
     "MI",
     "TN",
-]
-nooo = [
+    "MI",
+    "TN",
     "CT",
     "OH",
     "NE",
     "IL",
     "FL",
-    "OK",
     "PA",
+]
+nooo = [
     "KS",
     "IA",
     "KY",
@@ -131,9 +134,10 @@ eof_tr = white_tpr - black_tpr
 ## Can we learn to solve this issue?
 ################################
 ####### PARAMETERS #############
-SAMPLE_FRAC = 1000
+SAMPLE_FRAC = 100
 ITERS = 5_000
-THRES = -0.05
+THRES_ = 1
+GROUP = 1
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
@@ -173,14 +177,18 @@ def create_meta_data(test, samples, boots):
         row_shap = []
 
         # Sampling
-        aux = test.sample(n=samples, replace=True)
+        aux = test.sample(n=SAMPLE_FRAC, replace=True)
 
         # Performance calculation
         preds = model.predict_proba(aux.drop(columns=["target"]))[:, 1]
-        white_tpr = np.mean(preds[(aux.target == 1) & (aux.group == 1)])
-        black_tpr = np.mean(preds[(aux.target) & (aux.group == 2)])
-        eof_te = white_tpr - black_tpr
-        performance[i] = eof_tr - eof_te
+        if GROUP == 1:
+            performance[i] = white_tpr - np.mean(
+                preds[(aux.target == 1) & (aux.group == 1)]
+            )
+        else:
+            performance[i] = black_tpr - np.mean(
+                preds[(aux.target == 1) & (aux.group == GROUP)]
+            )
 
         # Shap values calculation
         shap_values = explainer(aux.drop(columns=["target"]))
@@ -232,11 +240,13 @@ for state in tqdm(states):
             survey_year="2018", horizon="1-Year", survey="person"
         )
         mi_data = data_source.get_data(states=[state], download=True)
-        mi_features, mi_labels, mi_group = ACSPublicCoverage.df_to_numpy(mi_data)
-        mi_features = pd.DataFrame(mi_features, columns=ACSPublicCoverage.features)
+        mi_features, mi_labels, mi_group = ACSMobility.df_to_numpy(mi_data)
+        mi_features = pd.DataFrame(mi_features, columns=ACSMobility.features)
         mi_full = mi_features.copy()
         mi_full["group"] = mi_group
         mi_full["target"] = mi_labels
+        mi_full = mi_full[mi_full["group"] == GROUP]
+
         input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
             mi_full, SAMPLE_FRAC, ITERS
         )
@@ -244,6 +254,8 @@ for state in tqdm(states):
         shap_tr = my_explode(shap_tr)
 
         # Convert in classification
+        THRES = THRES_ * np.mean(model_error_tr_)
+        print(THRES)
         model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
@@ -266,8 +278,9 @@ for state in tqdm(states):
         output_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
 
         res[state] = [input_results, shap_results, output_results]
-    except:
+    except Exception as e:
         print(state, "failed")
+        print(str(e))
 # %%
 df = pd.DataFrame(data=res).T
 df.columns = ["Input Shift", "Explanation Shift", "Output Shift"]
@@ -317,12 +330,18 @@ fig.write_image("images/best_method_PR.png")
 input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
     mi_full, SAMPLE_FRAC, ITERS
 )
+THRES = THRES_ * np.mean(model_error_tr_)
+model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
 # %%
 sns.kdeplot(model_error_tr_)
 # %%
-np.mean(preds[(aux.target == 1)])
+sns.kdeplot(model_error_tr)
+
 # %%
-print(np.mean(preds_ca[(ca_labels == 1) & (ca_group == 1)]))
+set(model_error_tr)
 # %%
-print(np.mean(preds_ca[(ca_labels == 1)]))
+np.mean(model_error_tr_)
+# %%
+THRES
+
 # %%
