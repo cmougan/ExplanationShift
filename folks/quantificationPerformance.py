@@ -290,6 +290,7 @@ sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu
 plt.axhline(0.5, color="black", linestyle="--")
 plt.ylim(0.4, 0.7)
 plt.savefig("images/shap_shift_PR.png")
+plt.ylabel("AUC")
 plt.show()
 # %%
 aux = df.copy()
