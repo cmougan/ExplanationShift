@@ -115,7 +115,7 @@ states = [
 # %%
 # Modeling
 model = XGBClassifier(verbosity=0, silent=True, use_label_encoder=False, njobs=1)
-#model = LogisticRegression()
+# model = LogisticRegression()
 # Train on CA data
 preds_ca = cross_val_predict(
     model, ca_features, ca_labels, cv=5, method="predict_proba"
@@ -139,7 +139,7 @@ train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
 
 # xAI Train
 explainer = shap.Explainer(model)
-#explainer = shap.LinearExplainer(model, ca_features, feature_dependence="correlation_dependent")
+# explainer = shap.LinearExplainer(model, ca_features, feature_dependence="correlation_dependent")
 shap_test = explainer(ca_features)
 shap_test = pd.DataFrame(shap_test.values, columns=ca_features.columns)
 
