@@ -244,7 +244,7 @@ for state in tqdm(states):
         mi_full = mi_features.copy()
         mi_full["group"] = mi_group
         mi_full["target"] = mi_labels
-        mi_full = mi_full[mi_full["group"] == GROUP]
+        #mi_full = mi_full[mi_full["group"] == GROUP]
 
         input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
             mi_full, SAMPLE_FRAC, ITERS
