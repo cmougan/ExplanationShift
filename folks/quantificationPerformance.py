@@ -118,7 +118,7 @@ states = [
 model = LogisticRegression()
 # Train on CA data
 preds_ca = cross_val_predict(
-    model, ca_features, ca_labels, cv=3, method="predict_proba"
+    model, ca_features, ca_labels, cv=5, method="predict_proba"
 )[:, 1]
 model.fit(ca_features, ca_labels)
 
@@ -131,7 +131,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-ITERS = 10_000
+ITERS = 5_000
 THRES = -0.05
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))

@@ -134,9 +134,9 @@ eof_tr = white_tpr - black_tpr
 ## Can we learn to solve this issue?
 ################################
 ####### PARAMETERS #############
-SAMPLE_FRAC = 100
+SAMPLE_FRAC = 200
 ITERS = 5_000
-THRES = 0.1
+THRES = 0.9
 GROUP = 1
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
