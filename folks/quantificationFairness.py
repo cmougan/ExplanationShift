@@ -136,7 +136,7 @@ eof_tr = white_tpr - black_tpr
 ####### PARAMETERS #############
 SAMPLE_FRAC = 50
 ITERS = 5_000
-THRES = 0.2
+THRES = 0.01
 GROUP = 1
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
