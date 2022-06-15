@@ -19,6 +19,7 @@ import numpy as np
 import random
 import sys
 import matplotlib.pyplot as plt
+from scipy.stats import kstest
 
 # Scikit-Learn
 from sklearn.linear_model import LogisticRegression
@@ -61,8 +62,8 @@ states = [
     "MI",
     "TN",
     "MI",
-]
-nooo = [
+    # ]
+    # nooo = [
     "TN",
     "CT",
     "OH",
@@ -134,7 +135,7 @@ eof_tr = white_tpr - black_tpr
 ## Can we learn to solve this issue?
 ################################
 ####### PARAMETERS #############
-SAMPLE_FRAC = 50
+SAMPLE_FRAC = 100
 ITERS = 5_000
 THRES = 0.01
 GROUP = 1
@@ -195,13 +196,13 @@ def create_meta_data(test, samples, boots):
         shap_values = pd.DataFrame(shap_values.values, columns=ca_features.columns)
 
         for feat in ca_features.columns:
-            ks = ca_features[feat].mean() - aux[feat].mean()
+            ks = np.median(ca_features[feat]) - np.median(aux[feat].median())
             sh = shap_test[feat].mean() - shap_values[feat].mean()
 
             row.append(ks)
             row_shap.append(sh)
         # Target shift
-        ks_target_shift = preds_ca.mean() - preds.mean()
+        ks_target_shift = kstest(preds_ca, preds).statistic
         row_target_shift.append(ks_target_shift)
         # Save results
         train_shap[i] = row_shap
@@ -250,8 +251,8 @@ for state in tqdm(states):
         input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
             mi_full, SAMPLE_FRAC, ITERS
         )
-        input_tr = my_explode(input_tr)
-        shap_tr = my_explode(shap_tr)
+        # input_tr = my_explode(input_tr)
+        # shap_tr = my_explode(shap_tr)
 
         # Convert in classification
 
