@@ -1,5 +1,4 @@
 # %%
-from cProfile import label
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -13,14 +12,17 @@ import shap
 
 from matplotlib import rcParams
 
-plt.style.use("seaborn-whitegrid")
+
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
 rcParams.update({"font.size": 16})
-
+plt.rcParams['axes.facecolor'] = 'white'
+plt.rcParams['axes.grid'] = True
+sns.set(font_scale=2)
 sns.set_style("whitegrid")
+plt.style.use("seaborn-whitegrid")
 # %%
 N = 5_000
 gamma = 1
@@ -70,9 +72,9 @@ for gamma in tqdm(np.linspace(0, 5, 50)):
     dp = ks_2samp(preds[A_te == 1], preds[A_te == -1]).statistic
     fair.append([gamma, white_tpr - black_tpr, dp, shap_test["Var3"].mean()])
 # %%
+#sns.set_style("whitegrid")
 res = pd.DataFrame(fair, columns=["Gamma", "Fairness", "DP", "SHAP"])
 plt.figure()
-sns.set(font_scale=2)
 sns.scatterplot(x="Gamma", y="Fairness", data=res, label="EOF")
 sns.scatterplot(x="Gamma", y="SHAP", data=res, label="SHAP")
 sns.scatterplot(x="Gamma", y="DP", data=res, label="DP")
@@ -80,6 +82,3 @@ plt.ylabel("")
 plt.legend()
 plt.savefig("images/syntheticFairnes.png")
 plt.show()
-
-
-# %%
