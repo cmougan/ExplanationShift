@@ -290,7 +290,7 @@ df.to_csv("results_fairTwo.csv")
 plt.figure()
 sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
 plt.axhline(0.5, color="black", linestyle="--")
-plt.ylim(0.4, 0.7)
+plt.ylim(0.4, 0.9)
 plt.savefig("images/shap_shift_fairTwo.png")
 plt.show()
 # %%
