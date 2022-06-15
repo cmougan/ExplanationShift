@@ -18,8 +18,8 @@ rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
 rcParams.update({"font.size": 16})
-plt.rcParams['axes.facecolor'] = 'white'
-plt.rcParams['axes.grid'] = True
+plt.rcParams["axes.facecolor"] = "white"
+plt.rcParams["axes.grid"] = True
 sns.set(font_scale=2)
 sns.set_style("whitegrid")
 plt.style.use("seaborn-whitegrid")
@@ -72,7 +72,7 @@ for gamma in tqdm(np.linspace(0, 5, 50)):
     dp = ks_2samp(preds[A_te == 1], preds[A_te == -1]).statistic
     fair.append([gamma, white_tpr - black_tpr, dp, shap_test["Var3"].mean()])
 # %%
-#sns.set_style("whitegrid")
+# sns.set_style("whitegrid")
 res = pd.DataFrame(fair, columns=["Gamma", "Fairness", "DP", "SHAP"])
 plt.figure()
 sns.scatterplot(x="Gamma", y="Fairness", data=res, label="EOF")
