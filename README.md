@@ -12,6 +12,7 @@ The experimental section is divided into two main parts. Experiments with synthe
 - Detecting multivariate shift `gaussianShift.py`
 - Posterior distribution shift `posteriorShift.py`
 - Quantifying model degradation `distributionSamplingGaussian.py`
+- Explanations, EOF, and DP `fairShift.py`
 
 ### Experiments on folks dataset
 - `folks/states.py` Predictive performance and fairness comparison
