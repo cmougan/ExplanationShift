@@ -51,9 +51,9 @@ random.seed(0)
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
 ca_data = data_source.get_data(states=["HI"], download=True)
-ca_features, ca_labels, ca_group = ACSIncome.df_to_numpy(ca_data)
+ca_features, ca_labels, ca_group = ACSMobility.df_to_numpy(ca_data)
 ## Conver to DF
-ca_features = pd.DataFrame(ca_features, columns=ACSIncome.features)
+ca_features = pd.DataFrame(ca_features, columns=ACSMobility.features)
 # %%
 states = [
     "MI",
@@ -235,8 +235,8 @@ for state in tqdm(states):
             survey_year="2018", horizon="1-Year", survey="person"
         )
         mi_data = data_source.get_data(states=[state], download=True)
-        mi_features, mi_labels, mi_group = ACSIncome.df_to_numpy(mi_data)
-        mi_features = pd.DataFrame(mi_features, columns=ACSIncome.features)
+        mi_features, mi_labels, mi_group = ACSMobility.df_to_numpy(mi_data)
+        mi_features = pd.DataFrame(mi_features, columns=ACSMobility.features)
         mi_full = mi_features.copy()
         mi_full["group"] = mi_group
         mi_full["target"] = mi_labels
@@ -283,13 +283,13 @@ for state in tqdm(states):
 # %%
 df = pd.DataFrame(data=res).T
 df.columns = ["Input Shift", "Explanation Shift", "Output Shift", "ATC"]
-df.to_csv("results_PR.csv")
+df.to_csv("results_performance.csv")
 # %%
 plt.figure()
 sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
 plt.axhline(0.5, color="black", linestyle="--")
 plt.ylim(0.4, 0.7)
-plt.savefig("images/shap_shift_PR.png")
+plt.savefig("images/shap_shift_performance.png")
 plt.ylabel("AUC")
 plt.show()
 # %%
@@ -327,7 +327,7 @@ fig = px.choropleth(
     # hover_data=["error_ood"],
 )
 fig.show()
-fig.write_image("images/best_method_PR.png")
+fig.write_image("images/best_method_performance.png")
 # %%
 aux = df.reset_index().rename(columns={"index": "state"})
 fig = px.choropleth(
@@ -343,5 +343,6 @@ fig = px.choropleth(
 fig.show()
 fig.write_image("images/performanceUS.png")
 # %%
-
-# %%
+print(df.mean())
+print(df.median())
+print(df.std())

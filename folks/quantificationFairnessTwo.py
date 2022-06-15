@@ -136,8 +136,8 @@ eof_tr = white_tpr - black_tpr
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
 ITERS = 5_000
-THRES = 0.1
-GROUP = 1
+THRES = 0.9
+GROUP = 2
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
@@ -285,13 +285,13 @@ for state in tqdm(states):
 # %%
 df = pd.DataFrame(data=res).T
 df.columns = ["Input Shift", "Explanation Shift", "Output Shift"]
-df.to_csv("results_fairOne.csv")
+df.to_csv("results_fairTwo.csv")
 # %%
 plt.figure()
 sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
 plt.axhline(0.5, color="black", linestyle="--")
 plt.ylim(0.4, 0.7)
-plt.savefig("images/shap_shift_fairOne.png")
+plt.savefig("images/shap_shift_fairTwo.png")
 plt.show()
 # %%
 aux = df.copy()
@@ -326,7 +326,7 @@ fig = px.choropleth(
     # hover_data=["error_ood"],
 )
 fig.show()
-fig.write_image("images/best_method_fairOne.png")
+fig.write_image("images/best_method_fairTwo.png")
 # %%
 print(df.mean())
 print(df.median())
