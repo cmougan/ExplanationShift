@@ -273,8 +273,8 @@ for state in tqdm(states):
             model_error_tr,
             np.where(
                 pd.DataFrame(atc_scores.values(), columns=["values"]).values < THRES,
-                0,
                 1,
+                0,
             ),
         )
         res[state] = [input_results, shap_results, output_results, atc_results]
