@@ -13,7 +13,7 @@ from folktables import (
 import pandas as pd
 from collections import defaultdict
 import seaborn as sns
-
+from scipy.stats import wasserstein_distance
 sns.set_style("whitegrid")
 import numpy as np
 import random
@@ -257,7 +257,7 @@ for state in tqdm(states):
         # Convert in classification
 
         model_error_tr = np.where(
-            model_error_tr_ < np.quantile(model_error_tr_, q=THRES), 1, 0
+            model_error_tr_ < THRES*np.mean(model_error_tr_), 1, 0
         )
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
