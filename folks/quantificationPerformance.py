@@ -275,7 +275,6 @@ for state in tqdm(states):
             0,
         )
         atc_results = roc_auc_score(model_error_tr, score_atc)
-        print(model_error_tr, score_atc)
         res[state] = [input_results, shap_results, output_results, atc_results]
     except:
         print(state, "failed")
