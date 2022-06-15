@@ -269,14 +269,13 @@ for state in tqdm(states):
         clf.fit(X_tr, y_tr)
         output_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
         # ATC
-        atc_results = roc_auc_score(
-            model_error_tr,
-            np.where(
-                pd.DataFrame(atc_scores.values(), columns=["values"]).values < THRES,
-                1,
-                0,
-            ),
+        score_atc = np.where(
+            pd.DataFrame(atc_scores.values(), columns=["values"]).values < THRES,
+            1,
+            0,
         )
+        atc_results = roc_auc_score(model_error_tr, score_atc)
+        print(model_error_tr, score_atc)
         res[state] = [input_results, shap_results, output_results, atc_results]
     except:
         print(state, "failed")
@@ -289,8 +288,9 @@ plt.figure()
 sns.barplot(y=df.mean().values, x=df.columns, ci=0.1, capsize=0.2, palette="RdBu_r")
 plt.axhline(0.5, color="black", linestyle="--")
 plt.ylim(0.4, 0.9)
-plt.savefig("images/shap_shift_performance.png")
 plt.ylabel("AUC")
+plt.tight_layout()
+plt.savefig("images/shap_shift_performance.png")
 plt.show()
 # %%
 aux = df.copy()
