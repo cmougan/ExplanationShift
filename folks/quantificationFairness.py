@@ -63,8 +63,8 @@ states = [
     "MI",
     "TN",
     "MI",
-    # ]
-    # nooo = [
+]
+nooo = [
     "TN",
     "CT",
     "OH",
@@ -244,7 +244,7 @@ for state in tqdm(states):
         mi_full = mi_features.copy()
         mi_full["group"] = mi_group
         mi_full["target"] = mi_labels
-        #mi_full = mi_full[mi_full["group"] == GROUP]
+        # mi_full = mi_full[mi_full["group"] == GROUP]
 
         input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
             mi_full, SAMPLE_FRAC, ITERS
@@ -254,9 +254,7 @@ for state in tqdm(states):
 
         # Convert in classification
 
-        model_error_tr = np.where(
-            model_error_tr_ < THRES , 1, 0
-        )
+        model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
             input_tr, model_error_tr, test_size=0.3, random_state=42
