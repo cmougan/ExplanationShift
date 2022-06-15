@@ -14,6 +14,7 @@ import pandas as pd
 from collections import defaultdict
 import seaborn as sns
 from scipy.stats import wasserstein_distance
+
 sns.set_style("whitegrid")
 import numpy as np
 import random
@@ -137,7 +138,7 @@ eof_tr = white_tpr - black_tpr
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
 ITERS = 5_000
-THRES = 0.01
+THRES = -0.05
 GROUP = 1
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
@@ -182,14 +183,11 @@ def create_meta_data(test, samples, boots):
 
         # Performance calculation
         preds = model.predict_proba(aux.drop(columns=["target"]))[:, 1]
-        if GROUP == 1:
-            performance[i] = white_tpr - np.mean(
-                preds[(aux.target == 1) & (aux.group == 1)]
-            )
-        else:
-            performance[i] = black_tpr - np.mean(
-                preds[(aux.target == 1) & (aux.group == GROUP)]
-            )
+
+        performance[i] = eof_tr - (
+            np.mean(preds[(aux.target == 1) & (aux.group == 1)])
+            - np.mean(preds[(aux.target == 1) & (aux.group == 2)])
+        )
 
         # Shap values calculation
         shap_values = explainer(aux.drop(columns=["target"]))
@@ -257,7 +255,7 @@ for state in tqdm(states):
         # Convert in classification
 
         model_error_tr = np.where(
-            model_error_tr_ < THRES*np.mean(model_error_tr_), 1, 0
+            model_error_tr_ < THRES , 1, 0
         )
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
