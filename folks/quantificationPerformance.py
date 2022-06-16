@@ -53,9 +53,9 @@ random.seed(0)
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
 ca_data = data_source.get_data(states=["HI"], download=True)
-ca_features, ca_labels, ca_group = ACSMobility.df_to_numpy(ca_data)
+ca_features, ca_labels, ca_group = ACSIncome.df_to_numpy(ca_data)
 ## Conver to DF
-ca_features = pd.DataFrame(ca_features, columns=ACSMobility.features)
+ca_features = pd.DataFrame(ca_features, columns=ACSIncome.features)
 # %%
 states = [
     "MI",
@@ -116,8 +116,8 @@ nooo = [
 
 # %%
 # Modeling
-model = XGBClassifier(verbosity=0, silent=True, use_label_encoder=False, njobs=1)
-# model = LogisticRegression()
+# model = XGBClassifier(verbosity=0, silent=True, use_label_encoder=False, njobs=1)
+model = LogisticRegression()
 # Train on CA data
 preds_ca = cross_val_predict(
     model, ca_features, ca_labels, cv=5, method="predict_proba"
@@ -134,14 +134,16 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
 ITERS = 5_000
-THRES = -0.025
+THRES = -0.05
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
 
 # xAI Train
-explainer = shap.Explainer(model)
-# explainer = shap.LinearExplainer(model, ca_features, feature_dependence="correlation_dependent")
+# explainer = shap.Explainer(model)
+explainer = shap.LinearExplainer(
+    model, ca_features, feature_dependence="correlation_dependent"
+)
 shap_test = explainer(ca_features)
 shap_test = pd.DataFrame(shap_test.values, columns=ca_features.columns)
 
@@ -195,7 +197,7 @@ def create_meta_data(test, samples, boots):
             row.append(ks)
             row_shap.append(sh)
         # Target shift
-        ks_target_shift = kstest(preds_ca, preds).statistic
+        ks_target_shift = np.mean(preds_ca) - np.mean(preds)
         row_target_shift.append(ks_target_shift)
         # Save results
         train_shap[i] = row_shap
@@ -235,8 +237,8 @@ for state in tqdm(states):
             survey_year="2018", horizon="1-Year", survey="person"
         )
         mi_data = data_source.get_data(states=[state], download=True)
-        mi_features, mi_labels, mi_group = ACSMobility.df_to_numpy(mi_data)
-        mi_features = pd.DataFrame(mi_features, columns=ACSMobility.features)
+        mi_features, mi_labels, mi_group = ACSIncome.df_to_numpy(mi_data)
+        mi_features = pd.DataFrame(mi_features, columns=ACSIncome.features)
         mi_full = mi_features.copy()
         mi_full["group"] = mi_group
         mi_full["target"] = mi_labels
