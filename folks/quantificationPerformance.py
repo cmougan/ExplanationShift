@@ -132,7 +132,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-ITERS = 1_000
+ITERS = 5_000
 THRES = -0.025
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
@@ -194,7 +194,7 @@ def create_meta_data(test, samples, boots):
             row.append(ks)
             row_shap.append(sh)
         # Target shift
-        ks_target_shift = preds_ca.mean() - preds.mean()
+        ks_target_shift = kstest(preds_ca, preds).statistic
         row_target_shift.append(ks_target_shift)
         # Save results
         train_shap[i] = row_shap
