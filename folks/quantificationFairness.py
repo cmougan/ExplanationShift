@@ -119,8 +119,8 @@ nooo = [
 
 # %%
 # Modeling
-# model = XGBClassifier(verbosity=0, silent=True, use_label_encoder=False, njobs=1)
-model = LogisticRegression()
+model = XGBClassifier(verbosity=0, silent=True, use_label_encoder=False, njobs=1)
+# model = LogisticRegression()
 # Train on CA data
 preds_ca = cross_val_predict(
     model, ca_features, ca_labels, cv=3, method="predict_proba"
@@ -145,10 +145,8 @@ train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
 
 # xAI Train
-# explainer = shap.Explainer(model)
-explainer = shap.LinearExplainer(
-    model, ca_features, feature_dependence="correlation_dependent"
-)
+explainer = shap.Explainer(model)
+# explainer = shap.LinearExplainer(   model, ca_features, feature_dependence="correlation_dependent")
 shap_test = explainer(ca_features)
 shap_test = pd.DataFrame(shap_test.values, columns=ca_features.columns)
 
@@ -342,14 +340,3 @@ fig.write_image("images/best_method_fairOne.png")
 print(df.mean())
 print(df.median())
 print(df.std())
-# %%
-input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
-    mi_full, SAMPLE_FRAC, ITERS
-)
-# %%
-input_tr = my_explode(input_tr)
-shap_tr = my_explode(shap_tr)
-# %%
-# Convert in classification
-
-model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
