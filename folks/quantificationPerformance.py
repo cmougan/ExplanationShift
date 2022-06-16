@@ -39,6 +39,7 @@ from tqdm import tqdm
 # Home made code
 import sys
 import os
+
 sys.path.append("../")
 sys.path.append("/home/jupyter/ExplanationShift")
 from ATC_opt import ATC
@@ -57,8 +58,6 @@ ca_features = pd.DataFrame(ca_features, columns=ACSMobility.features)
 states = [
     "MI",
     "TN",
-    # ]
-    # nooo = [
     "CT",
     "OH",
     "NE",
@@ -73,6 +72,8 @@ states = [
     "LA",
     "TX",
     "UT",
+]
+nooo = [
     "OR",
     "ME",
     "NJ",

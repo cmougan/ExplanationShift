@@ -40,6 +40,7 @@ from tqdm import tqdm
 # Home made code
 import sys
 import os
+
 sys.path.append("../")
 sys.path.append("/home/jupyter/ExplanationShift")
 
@@ -199,7 +200,6 @@ def create_meta_data(test, samples, boots):
                 - np.median(aux[feat][aux["group"] == 2]),
             ]
 
-
             sh = [
                 np.mean(shap_test[feat][ca_features.reset_index()["group"] == 1])
                 - np.mean(shap_values[feat][aux.reset_index()["group"] == 1].mean()),
@@ -343,21 +343,19 @@ print(df.median())
 print(df.std())
 # %%
 input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
-            mi_full, SAMPLE_FRAC, ITERS
-        )
+    mi_full, SAMPLE_FRAC, ITERS
+)
 # %%
-ca_features['AGEP'][ca_features["group"] == 1].mean()
+ca_features["AGEP"][ca_features["group"] == 1].mean()
 # %%
-a,b,c = create_meta_data(
-            mi_full, SAMPLE_FRAC, ITERS
-        )
+a, b, c = create_meta_data(mi_full, SAMPLE_FRAC, ITERS)
 # %%
 a
 
 # %%
 b
 # %%
-b['AGEP'][c.reset_index()['group']==1]
+b["AGEP"][c.reset_index()["group"] == 1]
 # %%
 b
 # %%
