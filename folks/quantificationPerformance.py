@@ -17,7 +17,6 @@ import seaborn as sns
 sns.set_style("whitegrid")
 import numpy as np
 import random
-import sys
 import matplotlib.pyplot as plt
 
 # Scikit-Learn
@@ -39,7 +38,7 @@ from tqdm import tqdm
 
 # Home made code
 import sys
-
+import os
 sys.path.append("../")
 sys.path.append("/home/jupyter/ExplanationShift")
 from ATC_opt import ATC
