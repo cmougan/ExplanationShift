@@ -38,6 +38,7 @@ from tqdm import tqdm
 # Home made code
 import sys
 import os
+import traceback
 
 sys.path.append("../")
 sys.path.append("/home/jupyter/ExplanationShift")
@@ -279,9 +280,7 @@ for state in tqdm(states):
         res[state] = [input_results, shap_results, output_results]
     except Exception as e:
         print(state, "failed")
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
+        print(traceback.format_exc())
 # %%
 df = pd.DataFrame(data=res).T
 df.columns = ["Input Shift", "Explanation Shift", "Output Shift"]

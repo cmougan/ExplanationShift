@@ -40,6 +40,7 @@ from tqdm import tqdm
 # Home made code
 import sys
 import os
+import traceback
 
 sys.path.append("../")
 sys.path.append("/home/jupyter/ExplanationShift")
@@ -137,7 +138,7 @@ eof_tr = white_tpr - black_tpr
 ####### PARAMETERS #############
 SAMPLE_FRAC = 1000
 ITERS = 5_000
-THRES = -0.05
+THRES = 0.05
 GROUP = 1
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
@@ -264,7 +265,9 @@ for state in tqdm(states):
 
         # Convert in classification
 
-        model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
+        model_error_tr = np.where(
+            model_error_tr_ < np.quantile(model_error_tr_, q=THRES), 1, 0
+        )
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
             input_tr, model_error_tr, test_size=0.3, random_state=42
@@ -288,9 +291,7 @@ for state in tqdm(states):
         res[state] = [input_results, shap_results, output_results]
     except Exception as e:
         print(state, "failed")
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
+        print(traceback.format_exc())
 # %%
 df = pd.DataFrame(data=res).T
 df.columns = ["Input Shift", "Explanation Shift", "Output Shift"]
@@ -346,16 +347,9 @@ input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
     mi_full, SAMPLE_FRAC, ITERS
 )
 # %%
-ca_features["AGEP"][ca_features["group"] == 1].mean()
+input_tr = my_explode(input_tr)
+shap_tr = my_explode(shap_tr)
 # %%
-a, b, c = create_meta_data(mi_full, SAMPLE_FRAC, ITERS)
-# %%
-a
+# Convert in classification
 
-# %%
-b
-# %%
-b["AGEP"][c.reset_index()["group"] == 1]
-# %%
-b
-# %%
+model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
