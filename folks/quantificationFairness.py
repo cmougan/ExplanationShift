@@ -62,8 +62,6 @@ states = [
     "OK",
     "TN",
     "MI",
-]
-nooo = [
     "PR",
     "TN",
     "CT",
@@ -83,6 +81,8 @@ nooo = [
     "ME",
     "NJ",
     "ID",
+]
+nooo = [
     "DE",
     "MN",
     "WI",
@@ -195,10 +195,10 @@ def create_meta_data(test, samples, boots):
 
         for feat in ca_features.columns:
             ks = [
-                np.median(ca_features[feat][ca_features["group"] == 1])
-                - np.median(aux[feat][aux["group"] == 1]),
-                np.median(ca_features[feat][ca_features["group"] == 2])
-                - np.median(aux[feat][aux["group"] == 2]),
+                np.mean(ca_features[feat][ca_features["group"] == 1])
+                - np.mean(aux[feat][aux["group"] == 1]),
+                np.mean(ca_features[feat][ca_features["group"] == 2])
+                - np.mean(aux[feat][aux["group"] == 2]),
             ]
 
             sh = [
