@@ -131,7 +131,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ## Can we learn to solve this issue?
 ################################
 ####### PARAMETERS #############
-SAMPLE_FRAC = 1000
+SAMPLE_FRAC = 100
 ITERS = 1_000
 THRES = -0.05
 # Init
