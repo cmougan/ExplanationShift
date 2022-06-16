@@ -133,7 +133,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
 ITERS = 1_000
-THRES = -0.05
+THRES = -0.025
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
