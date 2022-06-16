@@ -1,5 +1,12 @@
 # %%
-from folktables import ACSDataSource, ACSIncome
+from folktables import (
+    ACSDataSource,
+    ACSIncome,
+    ACSEmployment,
+    ACSMobility,
+    ACSPublicCoverage,
+    ACSTravelTime,
+)
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import roc_auc_score
 import pandas as pd
@@ -17,15 +24,15 @@ random.seed(0)
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
 ca_data = data_source.get_data(states=["HI"], download=True)
-ca_features, ca_labels, ca_group = ACSIncome.df_to_numpy(ca_data)
+ca_features, ca_labels, ca_group = ACSMobility.df_to_numpy(ca_data)
 
 # OOD
 data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
-mi_data = data_source.get_data(states=["CA"], download=True)
-mi_features, mi_labels, mi_group = ACSIncome.df_to_numpy(mi_data)
+mi_data = data_source.get_data(states=["PR"], download=True)
+mi_features, mi_labels, mi_group = ACSMobility.df_to_numpy(mi_data)
 ## Conver to DF
-ca_features = pd.DataFrame(ca_features, columns=ACSIncome.features)
-mi_features = pd.DataFrame(mi_features, columns=ACSIncome.features)
+ca_features = pd.DataFrame(ca_features, columns=ACSMobility.features)
+mi_features = pd.DataFrame(mi_features, columns=ACSMobility.features)
 
 # %%
 # Modeling
