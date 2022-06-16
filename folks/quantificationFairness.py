@@ -13,7 +13,7 @@ from folktables import (
 import pandas as pd
 from collections import defaultdict
 import seaborn as sns
-from scipy.stats import wasserstein_distance,kstest
+from scipy.stats import wasserstein_distance, kstest
 
 sns.set_style("whitegrid")
 import numpy as np
