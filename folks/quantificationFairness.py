@@ -58,13 +58,12 @@ ca_features["group"] = ca_group
 # %%
 states = [
     "CA",
-    "PR",
     "OK",
-    "MI",
     "TN",
     "MI",
 ]
 nooo = [
+    "PR",
     "TN",
     "CT",
     "OH",
@@ -194,8 +193,20 @@ def create_meta_data(test, samples, boots):
         shap_values = pd.DataFrame(shap_values.values, columns=ca_features.columns)
 
         for feat in ca_features.columns:
-            ks = np.median(ca_features[feat]) - np.median(aux[feat].median())
-            sh = shap_test[feat].mean() - shap_values[feat].mean()
+            ks = [
+                np.median(ca_features[feat][ca_features["group"] == 1])
+                - np.median(aux[feat][aux["group"] == 1]),
+                np.median(ca_features[feat][ca_features["group"] == 2])
+                - np.median(aux[feat][aux["group"] == 2]),
+            ]
+
+
+            sh = [
+                np.mean(shap_test[feat][ca_features.reset_index()["group"] == 1])
+                - np.mean(shap_values[feat][aux.reset_index()["group"] == 1].mean()),
+                np.mean(shap_test[feat][ca_features.reset_index()["group"] == 2])
+                - np.mean(shap_values[feat][aux.reset_index()["group"] == 2]),
+            ]
 
             row.append(ks)
             row_shap.append(sh)
@@ -249,8 +260,8 @@ for state in tqdm(states):
         input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
             mi_full, SAMPLE_FRAC, ITERS
         )
-        # input_tr = my_explode(input_tr)
-        # shap_tr = my_explode(shap_tr)
+        input_tr = my_explode(input_tr)
+        shap_tr = my_explode(shap_tr)
 
         # Convert in classification
 
@@ -278,7 +289,9 @@ for state in tqdm(states):
         res[state] = [input_results, shap_results, output_results]
     except Exception as e:
         print(state, "failed")
-        print(str(e))
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
 # %%
 df = pd.DataFrame(data=res).T
 df.columns = ["Input Shift", "Explanation Shift", "Output Shift"]
@@ -329,4 +342,23 @@ fig.write_image("images/best_method_fairOne.png")
 print(df.mean())
 print(df.median())
 print(df.std())
+# %%
+input_tr, shap_tr, output_tr, model_error_tr_ = create_meta_data(
+            mi_full, SAMPLE_FRAC, ITERS
+        )
+# %%
+ca_features['AGEP'][ca_features["group"] == 1].mean()
+# %%
+a,b,c = create_meta_data(
+            mi_full, SAMPLE_FRAC, ITERS
+        )
+# %%
+a
+
+# %%
+b
+# %%
+b['AGEP'][c.reset_index()['group']==1]
+# %%
+b
 # %%
