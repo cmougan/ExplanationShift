@@ -66,8 +66,6 @@ states = [
     "FL",
     "OK",
     "PA",
-]
-nooo = [
     "KS",
     "IA",
     "KY",
@@ -85,6 +83,8 @@ nooo = [
     "CA",
     "MO",
     "MD",
+]
+nooo = [
     "NV",
     "HI",
     "IN",
