@@ -135,7 +135,7 @@ eof_tr = white_tpr - black_tpr
 ## Can we learn to solve this issue?
 ################################
 ####### PARAMETERS #############
-SAMPLE_FRAC = 100
+SAMPLE_FRAC = 1000
 ITERS = 5_000
 THRES = -0.05
 GROUP = 1
