@@ -214,11 +214,11 @@ def create_meta_data(test, samples, boots):
         ks_target_shift = [
             kstest(
                 preds_ca[ca_features.reset_index()["group"] == 1],
-                preds[mi_features.reset_index()["group"] == 1],
+                preds[aux.reset_index()["group"] == 1],
             ).statistic,
             kstest(
                 preds_ca[ca_features.reset_index()["group"] == 1],
-                preds[mi_features.reset_index()["group"] == 1],
+                preds[aux.reset_index()["group"] == 1],
             ).statistic,
         ]
         row_target_shift.append(ks_target_shift)
