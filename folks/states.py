@@ -8,7 +8,7 @@ from folktables import (
     ACSTravelTime,
 )
 from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import roc_auc_score,accuracy_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 import pandas as pd
 from xgboost import XGBClassifier
 from scipy.stats import kstest
