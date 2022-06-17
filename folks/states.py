@@ -8,7 +8,7 @@ from folktables import (
     ACSTravelTime,
 )
 from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score,accuracy_score
 import pandas as pd
 from xgboost import XGBClassifier
 from scipy.stats import kstest
@@ -23,7 +23,7 @@ random.seed(0)
 # %%
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
-ca_data = data_source.get_data(states=["HI"], download=True)
+ca_data = data_source.get_data(states=["KS"], download=True)
 ca_features, ca_labels, ca_group = ACSMobility.df_to_numpy(ca_data)
 
 # OOD
@@ -58,9 +58,9 @@ print("Test EO", white_tpr - black_tpr)
 # %%
 ## Model performance
 print("Train")
-print(roc_auc_score(preds_ca, ca_labels))
+print(accuracy_score(preds_ca, ca_labels))
 print("Test")
-print(roc_auc_score(preds_mi, mi_labels))
+print(accuracy_score(preds_mi, mi_labels))
 
 # %%
 # Input KS
