@@ -210,16 +210,10 @@ def create_meta_data(test, samples, boots):
             row_shap.append(sh)
         # Target shift
         ks_target_shift = [
-            np.mean(
-                np.mean(
-                    preds_ca[ca_features.reset_index()["group"] == 1]
-                    - preds[aux.reset_index()["group"] == 1]
-                )
-            ),
-            np.mean(
-                preds_ca[ca_features.reset_index()["group"] == 1]
-                - preds[aux.reset_index()["group"] == 1]
-            ),
+            np.mean(preds_ca[ca_features.reset_index()["group"] == 1])
+            - np.mean(preds[aux.reset_index()["group"] == 1]),
+            np.mean(preds_ca[ca_features.reset_index()["group"] == 1])
+            - np.mean(preds[aux.reset_index()["group"] == 1]),
         ]
         row_target_shift.append(ks_target_shift)
         # Save results
