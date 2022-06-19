@@ -22,6 +22,8 @@ plt.style.use("seaborn-whitegrid")
 from xgboost import XGBRegressor, XGBClassifier
 import shap
 
+import sys
+
 sys.path.append("../")
 from fairtools.xaiUtils import ShapEstimator
 
