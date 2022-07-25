@@ -139,3 +139,6 @@ folks/data/*
 *.svg
 *.idea/*
 *.png
+
+.vscode/
+.dataset_cache
