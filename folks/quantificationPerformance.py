@@ -140,7 +140,7 @@ train_error = accuracy_score(ca_labels, np.round(preds_ca))
 train_error_acc = accuracy_score(ca_labels, np.round(preds_ca))
 
 # xAI Train
-# explainer = shap.Explainer(model)
+explainer = shap.Explainer(model)
 # explainer = shap.LinearExplainer(    model, ca_features, feature_dependence="correlation_dependent")
 shap_test = explainer(ca_features)
 shap_test = pd.DataFrame(shap_test.values, columns=ca_features.columns)
