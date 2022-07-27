@@ -16,6 +16,7 @@ The experimental section is divided into two main parts. Experiments with synthe
 
 ### Experiments on folks dataset
 - `folks/states.py` Predictive performance and fairness comparison
-- `samplingOOD.py` 
+- `folks/quantificationPerformance.py` Evaluating predictive performance decay
+- `folks/quantificationFairness.py` Evaluating Equal Opportunity Fairness decay
 
 Inside the results folder the scripts that recompile the output of the above experiment and produce the visualizations used in the paper.
