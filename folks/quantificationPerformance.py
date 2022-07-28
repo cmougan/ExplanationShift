@@ -14,6 +14,7 @@ import pandas as pd
 from collections import defaultdict
 import seaborn as sns
 import pdb
+
 sns.set_style("whitegrid")
 import numpy as np
 import random
@@ -53,9 +54,9 @@ random.seed(0)
 # Load data
 data_source = ACSDataSource(survey_year="2014", horizon="1-Year", survey="person")
 ca_data = data_source.get_data(states=["HI"], download=True)
-ca_features, ca_labels, ca_group = ACSTravelTime.df_to_numpy(ca_data)
+ca_features, ca_labels, ca_group = ACSPublicCoverage.df_to_numpy(ca_data)
 ## Conver to DF
-ca_features = pd.DataFrame(ca_features, columns=ACSTravelTime.features)
+ca_features = pd.DataFrame(ca_features, columns=ACSPublicCoverage.features)
 # %%
 states = [
     "MI",
@@ -237,8 +238,8 @@ for state in tqdm(states):
             survey_year="2018", horizon="1-Year", survey="person"
         )
         mi_data = data_source.get_data(states=[state], download=True)
-        mi_features, mi_labels, mi_group = ACSTravelTime.df_to_numpy(mi_data)
-        mi_features = pd.DataFrame(mi_features, columns=ACSTravelTime.features)
+        mi_features, mi_labels, mi_group = ACSPublicCoverage.df_to_numpy(mi_data)
+        mi_features = pd.DataFrame(mi_features, columns=ACSPublicCoverage.features)
         mi_full = mi_features.copy()
         mi_full["group"] = mi_group
         mi_full["target"] = mi_labels
@@ -250,7 +251,7 @@ for state in tqdm(states):
         shap_tr = my_explode(shap_tr)
 
         # Convert in classification
-        #model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
+        # model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
         model_error_tr = np.where(model_error_tr_ < np.mean(model_error_tr_), 1, 0)
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
