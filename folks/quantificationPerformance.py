@@ -250,12 +250,12 @@ for state in tqdm(states):
         shap_tr = my_explode(shap_tr)
 
         # Convert in classification
-        model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
+        #model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
+        model_error_tr = np.where(model_error_tr_ < np.mean(model_error_tr_), 1, 0)
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
             input_tr, model_error_tr, test_size=0.3, random_state=42
         )
-        pdb.set_trace()
         clf = LogisticRegression()
         clf.fit(X_tr, y_tr)
         input_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
