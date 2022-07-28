@@ -134,7 +134,7 @@ atc.fit(model.predict_proba(ca_features), ca_labels)
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 100
-ITERS = 5_000
+ITERS = 500_000
 THRES = -0.05
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
@@ -251,8 +251,8 @@ for state in tqdm(states):
         shap_tr = my_explode(shap_tr)
 
         # Convert in classification
-        # model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
-        model_error_tr = np.where(model_error_tr_ < np.mean(model_error_tr_), 1, 0)
+        model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
+
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
             input_tr, model_error_tr, test_size=0.3, random_state=42

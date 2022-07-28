@@ -137,8 +137,8 @@ eof_tr = white_tpr - black_tpr
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 1000
-ITERS = 5_000
-THRES = 0.05
+ITERS = 500_000
+THRES = -0.025
 GROUP = 1
 # Init
 train_error = accuracy_score(ca_labels, np.round(preds_ca))
@@ -271,9 +271,8 @@ for state in tqdm(states):
 
         # Convert in classification
 
-        model_error_tr = np.where(
-            model_error_tr_ < np.quantile(model_error_tr_, q=THRES), 1, 0
-        )
+        # model_error_tr = np.where(model_error_tr_ < np.quantile(model_error_tr_, q=THRES), 1, 0)
+        model_error_tr = np.where(model_error_tr_ < THRES, 1, 0)
         # Input
         X_tr, X_te, y_tr, y_te = train_test_split(
             input_tr, model_error_tr, test_size=0.3, random_state=42
