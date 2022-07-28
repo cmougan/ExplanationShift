@@ -13,7 +13,7 @@ from folktables import (
 import pandas as pd
 from collections import defaultdict
 import seaborn as sns
-
+import pdb
 sns.set_style("whitegrid")
 import numpy as np
 import random
@@ -255,6 +255,7 @@ for state in tqdm(states):
         X_tr, X_te, y_tr, y_te = train_test_split(
             input_tr, model_error_tr, test_size=0.3, random_state=42
         )
+        pdb.set_trace()
         clf = LogisticRegression()
         clf.fit(X_tr, y_tr)
         input_results = roc_auc_score(y_te, clf.predict_proba(X_te)[:, 1])
