@@ -125,7 +125,7 @@ SAMPLE_FRAC = 1_000
 ITERS = 1_000
 # Init
 train = defaultdict()
-performance = []
+performances = []
 train_shap = defaultdict()
 train_target = []
 
@@ -152,7 +152,7 @@ for i in tqdm(range(0, ITERS), leave=False):
     decay = train_error - accuracy_score(
         preds, aux.target
     )  # How much the preds differ from train
-    performance.append(decay)
+    performances.append(decay)
 
     # Shap values calculation
     shap_values = explainer(aux.drop(columns="target"))
@@ -173,7 +173,8 @@ for i in tqdm(range(0, ITERS), leave=False):
     train_target.append(trgt)
 # %%
 sns.kdeplot(performance)
-performance = np.where(np.array(performance) < np.mean(np.array(performance)), 1, 0)
+#performance = np.where(np.array(performance) < np.mean(np.array(performance)), 1, 0)
+performance = np.where(np.array(performances) < THRES, 1, 0)
 # %%
 # Save results
 train_df = pd.DataFrame(train).T
