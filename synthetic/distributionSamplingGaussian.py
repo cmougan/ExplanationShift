@@ -172,8 +172,8 @@ for i in tqdm(range(0, ITERS), leave=False):
     train[i] = row
     train_target.append(trgt)
 # %%
-sns.kdeplot(performance)
-#performance = np.where(np.array(performance) < np.mean(np.array(performance)), 1, 0)
+sns.kdeplot(performances)
+# performance = np.where(np.array(performance) < np.mean(np.array(performance)), 1, 0)
 performance = np.where(np.array(performances) < THRES, 1, 0)
 # %%
 # Save results
