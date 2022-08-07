@@ -67,17 +67,15 @@ df["target"] = np.where(df.target < df.target.mean(), 0, 1)
 ## Fit our ML model
 X_tr, X_te, y_tr, y_te = train_test_split(df.drop(columns="target"), df[["target"]])
 # %%
-# model = XGBClassifier(random_state=0)
-model = LogisticRegression()
+model = XGBClassifier(random_state=0)
+#model = LogisticRegression()
 preds_val = cross_val_predict(model, X_tr, y_tr, cv=3)
 model.fit(X_tr, y_tr)
 preds_test = model.predict(X_te)
 # %%
 ## Real explanation
-# explainer = shap.Explainer(model)
-explainer = shap.LinearExplainer(
-    model, X_te, feature_dependence="correlation_dependent"
-)
+explainer = shap.Explainer(model)
+#explainer = shap.LinearExplainer(model, X_te, feature_dependence="correlation_dependent")
 shap_values = explainer(X_te)
 exp = pd.DataFrame(
     data=shap_values.values, columns=["Shap%d" % (i + 1) for i in range(2)]
@@ -96,7 +94,7 @@ y_ood = df["Var1"] + 2 * df["Var2"] + np.random.normal(0, 0.1, samples)
 ## Can we learn xAI help to solve this issue?
 ################################
 ####### PARAMETERS #############
-SAMPLE_FRAC = 1_000
+SAMPLE_FRAC = 1_00
 ITERS = 1_000
 # Init
 train = defaultdict()
@@ -104,10 +102,8 @@ performances = []
 train_shap = defaultdict()
 train_target = []
 
-# explainer = shap.Explainer(model)
-explainer = shap.LinearExplainer(
-    model, X_te, feature_dependence="correlation_dependent"
-)
+explainer = shap.Explainer(model)
+#explainer = shap.LinearExplainer(model, X_te, feature_dependence="correlation_dependent")
 shap_test = explainer(X_te)
 shap_test = pd.DataFrame(shap_test.values, columns=X_tr.columns)
 
