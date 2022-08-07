@@ -13,7 +13,12 @@ from collections import defaultdict
 # Scikit Learn
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import roc_auc_score, mean_squared_error, mean_absolute_error
+from sklearn.metrics import (
+    roc_auc_score,
+    mean_squared_error,
+    mean_absolute_error,
+    accuracy_score,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
@@ -67,11 +72,13 @@ df = pd.DataFrame(data=[x1, x2]).T
 df.columns = ["Var%d" % (i + 1) for i in range(df.shape[1])]
 # df["target"] = np.where(df["Var1"] * df["Var2"] > 0, 1, 0)
 df["target"] = df["Var1"] * df["Var2"] + np.random.normal(0, 0.1, samples)
+# Binarize the target
+df["target"] = np.where(df.target < df.target.mean(), 0, 1)
 # %%
 ## Fit our ML model
 X_tr, X_te, y_tr, y_te = train_test_split(df.drop(columns="target"), df[["target"]])
 # %%
-model = XGBRegressor(random_state=0)
+model = XGBClassifier(random_state=0)
 preds_val = cross_val_predict(model, X_tr, y_tr, cv=3)
 model.fit(X_tr, y_tr)
 preds_test = model.predict(X_te)
@@ -115,46 +122,58 @@ print(ks_2samp(preds_test, preds_ood))
 ################################
 ####### PARAMETERS #############
 SAMPLE_FRAC = 1_000
-ITERS = 2_000
+ITERS = 1_000
 # Init
 train = defaultdict()
-performance = defaultdict()
+performance = []
 train_shap = defaultdict()
+train_target = []
 
 explainer = shap.Explainer(model)
 shap_test = explainer(X_te)
 shap_test = pd.DataFrame(shap_test.values, columns=X_tr.columns)
 
 full = X_ood.copy()
-full["target"] = y_ood
-train_error = mean_squared_error(y_tr, preds_val)
-# %%
+full["target"] = np.where(y_ood < df.target.mean(), 0, 1)
+train_error = accuracy_score(y_tr, preds_val)
+
 # Loop to creat training data
+THRES = 0.1
 for i in tqdm(range(0, ITERS), leave=False):
     row = []
     row_shap = []
+    row_preds = []
 
     # Sampling
     aux = full.sample(n=SAMPLE_FRAC, replace=True)
 
     # Performance calculation
     preds = model.predict(aux.drop(columns="target"))
-    preds = train_error - preds  # How much the preds differ from train
-    performance[i] = mean_absolute_error(aux.target.values, preds)
+    decay = train_error - accuracy_score(
+        preds, aux.target
+    )  # How much the preds differ from train
+    performance.append(decay)
 
     # Shap values calculation
     shap_values = explainer(aux.drop(columns="target"))
     shap_values = pd.DataFrame(shap_values.values, columns=X_tr.columns)
 
     for feat in X_tr.columns:
-        ks = psi(X_te[feat], aux[feat])
-        sh = psi(shap_test[feat], shap_values[feat])
-        row.append(ks)
+        input = np.mean(X_te[feat]) - np.mean(aux[feat])
+        sh = np.mean(shap_test[feat]) - np.mean(shap_values[feat])
+
+        row.append(input)
         row_shap.append(sh)
+
+    trgt = np.mean(y_te) - np.mean(preds)
+    row_preds.append(trgt)
 
     train_shap[i] = row_shap
     train[i] = row
-
+    train_target.append(trgt)
+# %%
+sns.kdeplot(performance)
+performance = np.where(np.array(performance) < np.mean(np.array(performance)), 1, 0)
 # %%
 # Save results
 train_df = pd.DataFrame(train).T
@@ -164,18 +183,20 @@ train_shap_df = pd.DataFrame(train_shap).T
 train_shap_df.columns = X_tr.columns
 train_shap_df = train_shap_df.add_suffix("_shap")
 
+target_df = pd.DataFrame(train_target)
+
 # %%
 # Estimators for the loop
 estimators = defaultdict()
-estimators["Dummy"] = DummyRegressor()
+# estimators["Dummy"] = DummyRegressor()
 estimators["Linear"] = Pipeline(
-    [("scaler", StandardScaler()), ("model", LinearRegression())]
+    [("scaler", StandardScaler()), ("model", LogisticRegression())]
 )
-estimators["Lasso"] = Pipeline([("scaler", StandardScaler()), ("model", Lasso())])
-estimators["RandomForest"] = RandomForestRegressor(random_state=0)
-estimators["XGBoost"] = XGBRegressor(verbose=0, random_state=0)
-estimators["SVM"] = SVR()
-estimators["MLP"] = MLPRegressor(random_state=0)
+# estimators["Lasso"] = Pipeline([("scaler", StandardScaler()), ("model", Lasso())])
+# estimators["RandomForest"] = RandomForestRegressor(random_state=0)
+# estimators["XGBoost"] = XGBClassifier(verbose=0, random_state=0)
+# estimators["SVM"] = SVR()
+# estimators["MLP"] = MLPRegressor(random_state=0)
 # %%
 # Loop over different G estimators
 for estimator in estimators:
@@ -186,7 +207,8 @@ for estimator in estimators:
     )
     estimators[estimator].fit(X_train, y_train)
     print(
-        "ONLY DATA", mean_absolute_error(estimators[estimator].predict(X_test), y_test)
+        "ONLY DATA",
+        roc_auc_score(y_test, estimators[estimator].predict_proba(X_test)[:, 1]),
     )
 
     #### ONLY SHAP
@@ -195,7 +217,8 @@ for estimator in estimators:
     )
     estimators[estimator].fit(X_train, y_train)
     print(
-        "ONLY SHAP", mean_absolute_error(estimators[estimator].predict(X_test), y_test)
+        "ONLY SHAP",
+        roc_auc_score(y_test, estimators[estimator].predict_proba(X_test)[:, 1]),
     )
 
     ### SHAP + DATA
@@ -208,5 +231,13 @@ for estimator in estimators:
     estimators[estimator].fit(X_train, y_train)
     print(
         "SHAP + DATA",
-        mean_absolute_error(estimators[estimator].predict(X_test), y_test),
+        roc_auc_score(y_test, estimators[estimator].predict_proba(X_test)[:, 1]),
     )
+    ### TARGET
+    ## ONLY DATA
+    X_train, X_test, y_train, y_test = train_test_split(
+        target_df, performance, test_size=0.33, random_state=42
+    )
+    estimators[estimator].fit(X_train, y_train)
+    print("ONLY Target", roc_auc_score(y_test, estimators[estimator].predict(X_test)))
+# %%
