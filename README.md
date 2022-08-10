@@ -9,10 +9,10 @@ The experimental section is divided into two main parts. Experiments with synthe
 
 ### Synthetic Data Experiments
 
-- Detecting multivariate shift `gaussianShift.py`
-- Posterior distribution shift `posteriorShift.py`
-- Quantifying model degradation `distributionSamplingGaussian.py`
-- Explanations, EOF, and DP `fairShift.py`
+- Detecting multivariate shift `synthetic/gaussianShift.py`
+- Posterior distribution shift `synthetic/posteriorShift.py`
+- Quantifying model degradation under multivariate shift `synthetic/quantificationMultivariate.py`
+- Quantifying model degradation under posterior shift `synthetic/quantificationPosterior.py`
 
 ### Experiments on folks dataset
 - `folks/states.py` Predictive performance and fairness comparison

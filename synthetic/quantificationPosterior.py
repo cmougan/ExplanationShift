@@ -68,14 +68,14 @@ df["target"] = np.where(df.target < df.target.mean(), 0, 1)
 X_tr, X_te, y_tr, y_te = train_test_split(df.drop(columns="target"), df[["target"]])
 # %%
 model = XGBClassifier(random_state=0)
-#model = LogisticRegression()
+# model = LogisticRegression()
 preds_val = cross_val_predict(model, X_tr, y_tr, cv=3)
 model.fit(X_tr, y_tr)
 preds_test = model.predict(X_te)
 # %%
 ## Real explanation
 explainer = shap.Explainer(model)
-#explainer = shap.LinearExplainer(model, X_te, feature_dependence="correlation_dependent")
+# explainer = shap.LinearExplainer(model, X_te, feature_dependence="correlation_dependent")
 shap_values = explainer(X_te)
 exp = pd.DataFrame(
     data=shap_values.values, columns=["Shap%d" % (i + 1) for i in range(2)]
@@ -103,7 +103,7 @@ train_shap = defaultdict()
 train_target = []
 
 explainer = shap.Explainer(model)
-#explainer = shap.LinearExplainer(model, X_te, feature_dependence="correlation_dependent")
+# explainer = shap.LinearExplainer(model, X_te, feature_dependence="correlation_dependent")
 shap_test = explainer(X_te)
 shap_test = pd.DataFrame(shap_test.values, columns=X_tr.columns)
 
