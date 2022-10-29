@@ -33,7 +33,7 @@ from fairtools.xaiUtils import ShapEstimator
 sigma = 5
 mean = [0, 0]
 cov = [[sigma, 0], [0, sigma]]
-samples = 50_000
+samples = 5_000
 x1, x2 = np.random.multivariate_normal(mean, cov, samples).T
 # Different values
 mean = [0, 0]
@@ -104,90 +104,23 @@ print(ks_2samp(preds_test, preds_ood))
 # %%
 ## Does xAI help to solve this issue?
 ## Shap Estimator
-se = ShapEstimator(model=model)
-shap_pred_tr = cross_val_predict(se, X_tr, y_tr, cv=3)
-shap_pred_tr = pd.DataFrame(shap_pred_tr, columns=X_tr.columns)
-shap_pred_tr = shap_pred_tr.add_suffix("_shap")
-
-se.fit(X_tr, y_tr)
+exp_ood["label"] = 1
+exp["label"] = 0
+exp_space = pd.concat([exp, exp_ood])
 # %%
-# Estimators to use
-estimators = defaultdict()
-estimators["Linear"] = Pipeline([("scaler", StandardScaler()), ("model", Lasso())])
-estimators["RandomForest"] = RandomForestRegressor(random_state=0)
-estimators["XGBoost"] = XGBRegressor(random_state=0)
-estimators["MLP"] = MLPRegressor(random_state=0)
+exp_space.label.value_counts()
 # %%
-for estimator in estimators:
-    print(estimator)
-    clf = estimators[estimator]
-    error_tr = y_tr.target.values - preds_val
-    preds_tr_shap = cross_val_predict(clf, shap_pred_tr, error_tr, cv=3)
-    clf.fit(shap_pred_tr, error_tr)
-
-    ## Test Set
-    shap_pred_te = se.predict(X_te)
-    shap_pred_te = pd.DataFrame(shap_pred_te, columns=X_te.columns)
-    shap_pred_te = shap_pred_te.add_suffix("_shap")
-
-    error_te = y_te.target.values - preds_test
-    preds_te_shap = clf.predict(shap_pred_te)
-
-    ## OOD Set
-    shap_pred_ood = se.predict(X_ood)
-    shap_pred_ood = pd.DataFrame(shap_pred_ood, columns=X_te.columns)
-    shap_pred_ood = shap_pred_ood.add_suffix("_shap")
-
-    error_ood = y_ood - preds_ood
-    preds_ood_shap = clf.predict(shap_pred_ood)
-    # Original error
-    print("Original error, should remain invariant to diff estimators")
-    print(mean_squared_error(y_tr, preds_val))
-    print(mean_squared_error(y_te, preds_test))
-    print(mean_squared_error(y_ood, preds_ood))
-
-    ## Only SHAP
-    print("Only SHAP")
-    print(mean_squared_error(error_tr, preds_tr_shap))
-    print(mean_squared_error(error_te, preds_te_shap))
-    print(mean_squared_error(error_ood, preds_ood_shap))
-
-    ## Only data
-    print("Only data")
-    preds_tr_shap = cross_val_predict(clf, X_tr, error_tr, cv=3)
-    clf.fit(X_tr, error_tr)
-    preds_te_shap = clf.predict(X_te)
-    preds_ood_shap = clf.predict(X_ood)
-    print(mean_squared_error(error_tr, preds_tr_shap))
-    print(mean_squared_error(error_te, preds_te_shap))
-    print(mean_squared_error(error_ood, preds_ood_shap))
-
-    print("Shap + Data")
-    ## SHAP + Data
-    tr_full = pd.concat(
-        [shap_pred_tr.reset_index(drop=True), X_tr.reset_index(drop=True)], axis=1
-    )
-    te_full = pd.concat(
-        [shap_pred_te.reset_index(drop=True), X_te.reset_index(drop=True)], axis=1
-    )
-    ood_full = pd.concat(
-        [shap_pred_ood.reset_index(drop=True), X_ood.reset_index(drop=True)], axis=1
-    )
-
-    preds_tr_shap = cross_val_predict(clf, tr_full, error_tr, cv=3)
-    clf.fit(tr_full, error_tr)
-    preds_te_shap = clf.predict(te_full)
-    preds_ood_shap = clf.predict(ood_full)
-    print(mean_squared_error(error_tr, preds_tr_shap))
-    print(mean_squared_error(error_te, preds_te_shap))
-    print(mean_squared_error(error_ood, preds_ood_shap))
-
+S_tr, S_te, y_tr, y_te = train_test_split(
+    exp_space.drop(columns="label"), exp_space[["label"]], random_state=0, test_size=0.5
+)
+logreg = LogisticRegression(random_state=0)
+logreg = XGBClassifier(random_state=0)
+logreg.fit(S_tr, y_tr)
 # %%
+preds = logreg.predict_proba(S_te)[:, 1]
+print(roc_auc_score(y_te, preds))
 # %%
-model = MLPRegressor(random_state=0)
-preds_val = cross_val_predict(model, X_tr, y_tr, cv=3)
-model.fit(X_tr, y_tr)
-preds_test = model.predict(X_te)
-print(mean_squared_error(preds_test, y_te))
-print(mean_squared_error(model.predict(X_ood), y_ood))
-# That would be the best result possible
+explainer = shap.Explainer(logreg)
+shap_values = explainer(S_te)
+shap.plots.bar(shap_values)
+# %%
