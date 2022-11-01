@@ -129,7 +129,7 @@ shap.plots.bar(shap_values)
 res_exp = []
 res_out = []
 res_inp = []
-iters = np.linspace(-1, 1, 20)
+iters = np.linspace(0, 1, 10)
 for rho in iters:
     ## Create variables
     ### Normal
@@ -144,18 +144,20 @@ for rho in iters:
     x11, x22 = np.random.multivariate_normal(mean, cov, samples).T
 
     ## Plotting
+    """
     plt.figure()
     plt.scatter(x1, x2, label="X")
     plt.scatter(x11, x22, label="X*")
     plt.xlabel("x1")
     plt.ylabel("x2")
     plt.legend()
+    """
 
     # Create Data
     df = pd.DataFrame(data=[x1, x2]).T
     df.columns = ["Var%d" % (i + 1) for i in range(df.shape[1])]
     # df["target"] = np.where(df["Var1"] * df["Var2"] > 0, 1, 0)
-    df["target"] = df["Var1"] * df["Var2"] + np.random.normal(0, 0.1, samples)
+    df["target"] = df["Var1"] * df["Var2"] + np.random.normal(0,0.2, samples)
     X_ood = pd.DataFrame(data=[x11, x22]).T
     X_ood.columns = ["Var%d" % (i + 1) for i in range(X_ood.shape[1])]
 
@@ -169,6 +171,7 @@ for rho in iters:
     ## Real explanation
     explainer = shap.Explainer(model)
     # explainer = shap.LinearExplainer(model, X_te, feature_dependence="correlation_dependent")
+    # shap.KernelExplainer(model.predict,X_te,nsamples=100)
     shap_values = explainer(X_te)
     exp = pd.DataFrame(
         data=shap_values.values, columns=["Shap%d" % (i + 1) for i in range(2)]
@@ -192,6 +195,27 @@ for rho in iters:
     input_space["label"] = exp_space["label"].values
     out_space = np.concatenate([preds_te, preds_ood])
 
+    ## Plots of the spaces
+    print('----------')
+    print('PARAMETER:  ',rho)
+    plt.figure()
+    sns.kdeplot(preds_te, label="In")
+    sns.kdeplot(preds_ood, label="Out")
+    plt.show()
+
+    plt.figure()
+    plt.scatter(exp_space[exp_space["label"]==1].Shap1, exp_space[exp_space["label"]==1].Shap2, label="X")
+    plt.scatter(exp_space[exp_space["label"]==0].Shap1, exp_space[exp_space["label"]==0].Shap2, label="X*")
+    plt.xlabel("x1")
+    plt.ylabel("x2")
+    plt.legend()
+
+
+
+
+    ## Model to be used
+    # logreg = XGBClassifier(random_state=0)
+    logreg = LogisticRegression(random_state=0)
     # Explanation Space
     S_tr, S_te, yy_tr, yy_te = train_test_split(
         exp_space.drop(columns="label"),
@@ -199,7 +223,6 @@ for rho in iters:
         random_state=0,
         test_size=0.5,
     )
-    logreg = XGBClassifier(random_state=0)
     logreg.fit(S_tr, yy_tr)
     # Evaluation
     preds = logreg.predict_proba(S_te)[:, 1]
@@ -212,7 +235,6 @@ for rho in iters:
         random_state=0,
         test_size=0.5,
     )
-    logreg = XGBClassifier(random_state=0)
     logreg.fit(S_tr, yy_tr)
     ## Evaluation
     preds = logreg.predict_proba(S_te)[:, 1]
@@ -225,7 +247,6 @@ for rho in iters:
         random_state=0,
         test_size=0.5,
     )
-    logreg = XGBClassifier(random_state=0)
     logreg.fit(S_tr, yy_tr)
     ## Evaluation
     preds = logreg.predict_proba(S_te)[:, 1]
@@ -244,4 +265,10 @@ plt.legend()
 plt.tight_layout()
 plt.savefig("images/sensivity.png")
 plt.show()
+# %%
+yy_tr
+# %%
+S_te
+# %%
+logreg.coef_
 # %%
