@@ -15,7 +15,7 @@ from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
-from sklearn.linear_model import LogisticRegression, Lasso
+from sklearn.linear_model import LogisticRegression, Lasso, LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 
 plt.style.use("seaborn-whitegrid")
@@ -38,7 +38,7 @@ x1, x2 = np.random.multivariate_normal(mean, cov, samples).T
 # Different values
 mean = [0, 0]
 rho = 3
-cov = [[sigma, out], [out, sigma]]
+cov = [[sigma, rho], [rho, sigma]]
 x11, x22 = np.random.multivariate_normal(mean, cov, samples).T
 # %%
 ## Plotting
@@ -80,7 +80,7 @@ X_ood.columns = ["Var%d" % (i + 1) for i in range(X_ood.shape[1])]
 preds_ood = model.predict(X_ood)
 shap_values = explainer(X_ood)
 exp_ood = pd.DataFrame(
-    data=X_ood.values, columns=["Shap%d" % (i + 1) for i in range(2)]
+    data=shap_values.values, columns=["Shap%d" % (i + 1) for i in range(2)]
 )
 y_ood = X_ood["Var1"] * X_ood["Var2"] + np.random.normal(0, 0.1, samples)
 # %%
@@ -129,7 +129,7 @@ shap.plots.bar(shap_values)
 res_exp = []
 res_out = []
 res_inp = []
-iters = np.linspace(0, 1, 10)
+iters = np.linspace(-1, 1, 20)
 for rho in iters:
     ## Create variables
     ### Normal
@@ -156,27 +156,31 @@ for rho in iters:
     df.columns = ["Var%d" % (i + 1) for i in range(df.shape[1])]
     # df["target"] = np.where(df["Var1"] * df["Var2"] > 0, 1, 0)
     df["target"] = df["Var1"] * df["Var2"] + np.random.normal(0, 0.1, samples)
+    X_ood = pd.DataFrame(data=[x11, x22]).T
+    X_ood.columns = ["Var%d" % (i + 1) for i in range(X_ood.shape[1])]
 
     ## Split Data
     X_tr, X_te, y_tr, y_te = train_test_split(df.drop(columns="target"), df["target"])
     ## Fit our ML model
     model = XGBRegressor(random_state=0)
+    # model = LinearRegression()
     model.fit(X_tr, y_tr)
 
     ## Real explanation
-    explainer = shap.Explainer(model)
+    # explainer = shap.Explainer(model)
+    explainer = shap.LinearExplainer(
+        model, X_te, feature_dependence="correlation_dependent"
+    )
     shap_values = explainer(X_te)
     exp = pd.DataFrame(
         data=shap_values.values, columns=["Shap%d" % (i + 1) for i in range(2)]
     )
-    ## OOD Data + OODexplanation
-    X_ood = pd.DataFrame(data=[x11, x22]).T
-    X_ood.columns = ["Var%d" % (i + 1) for i in range(X_ood.shape[1])]
+    ##  OODexplanation
     preds_ood = model.predict(X_ood)
     preds_te = model.predict(X_te)
     shap_values = explainer(X_ood)
     exp_ood = pd.DataFrame(
-        data=X_ood.values, columns=["Shap%d" % (i + 1) for i in range(2)]
+        data=shap_values.values, columns=["Shap%d" % (i + 1) for i in range(2)]
     )
     y_ood = X_ood["Var1"] * X_ood["Var2"] + np.random.normal(0, 0.1, samples)
 
