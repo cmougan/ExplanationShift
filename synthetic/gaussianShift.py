@@ -167,10 +167,8 @@ for rho in iters:
     model.fit(X_tr, y_tr)
 
     ## Real explanation
-    # explainer = shap.Explainer(model)
-    explainer = shap.LinearExplainer(
-        model, X_te, feature_dependence="correlation_dependent"
-    )
+    explainer = shap.Explainer(model)
+    # explainer = shap.LinearExplainer(model, X_te, feature_dependence="correlation_dependent")
     shap_values = explainer(X_te)
     exp = pd.DataFrame(
         data=shap_values.values, columns=["Shap%d" % (i + 1) for i in range(2)]
@@ -244,6 +242,6 @@ plt.xlabel(r"Correlation coefficient $\rho$")
 plt.ylabel(r"$g_\psi$ AUC")
 plt.legend()
 plt.tight_layout()
-plt.savefig("images/sensivity.pdf", bbox_inches="tight")
+plt.savefig("images/sensivity.png")
 plt.show()
 # %%
