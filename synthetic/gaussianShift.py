@@ -133,7 +133,7 @@ iters = np.linspace(-1, 1, 20)
 for rho in iters:
     ## Create variables
     ### Normal
-    sigma = 2
+    sigma = 1
     mean = [0, 0]
     cov = [[sigma, 0], [0, sigma]]
     samples = 5_000
