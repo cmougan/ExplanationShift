@@ -32,19 +32,21 @@ from fairtools.xaiUtils import ShapEstimator
 res_exp = []
 res_out = []
 res_inp = []
-iters = np.linspace(0, 5, 20)
+iters = np.linspace(0, 1, 20)
 for rho in iters:
     ## Create variables
     ### Normal
-    sigma = 5
-    mean = [0, 0, 0]
-    cov = [[sigma, 0, 0], [0, sigma, 0], [0, 0, sigma]]
+    sigma = 1
+    mean = [0, 0]
+    cov = [[sigma, 0], [0, sigma]]
     samples = 5_000
-    x1, x2, x3 = np.random.multivariate_normal(mean, cov, samples).T
+    x1, x2 = np.random.multivariate_normal(mean, cov, samples).T
+    x3 = np.random.normal(0, sigma, samples)
     # Different values
-    mean = [0, 0, 0]
-    cov = [[sigma, rho, rho], [rho, sigma, rho], [rho, rho, sigma]]
-    x11, x22, x33 = np.random.multivariate_normal(mean, cov, samples).T
+    mean = [0, 0]
+    cov = [[sigma, rho], [rho, sigma]]
+    x11, x22 = np.random.multivariate_normal(mean, cov, samples).T
+    x33 = np.random.normal(0, sigma, samples)
 
     # Create Data
     df = pd.DataFrame(data=[x1, x2, x3]).T
