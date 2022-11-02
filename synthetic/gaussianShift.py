@@ -169,7 +169,7 @@ for rho in iters:
     """
 # %%
 plt.figure()
-plt.title("Sensitivity to multivariate shift correlation")
+# plt.title("Sensitivity to multivariate shift correlation")
 plt.plot(iters, res_exp, label="Explanation Space")
 plt.plot(iters, res_inp, label="Input Space")
 plt.plot(iters, res_out, label="Output Space")
@@ -179,4 +179,24 @@ plt.legend()
 plt.tight_layout()
 plt.savefig("images/sensivity.png")
 plt.show()
+# %%
+# Accountability Explanation Space
+S_tr, S_te, yy_tr, yy_te = train_test_split(
+    exp_space.drop(columns="label"),
+    exp_space[["label"]],
+    random_state=0,
+    test_size=0.5,
+    stratify=exp_space[["label"]],
+)
+logreg.fit(S_tr, yy_tr)
+# %%
+explainer = shap.LinearExplainer(
+    logreg, S_te, feature_dependence="correlation_dependent"
+)
+shap_values = explainer(S_te)
+plt.figure()
+shap.plots.bar(shap_values, show=False)
+plt.savefig("images/xAIMultivariate.png")
+plt.show()
+
 # %%
