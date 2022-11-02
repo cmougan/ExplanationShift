@@ -169,7 +169,7 @@ for rho in iters:
     """
 # %%
 plt.figure()
-# plt.title("Sensitivity to multivariate shift correlation")
+plt.title("Sensitivity to multivariate shift correlation")
 plt.plot(iters, res_exp, label="Explanation Space")
 plt.plot(iters, res_inp, label="Input Space")
 plt.plot(iters, res_out, label="Output Space")
