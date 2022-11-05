@@ -221,7 +221,7 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
 
     def get_coefs(self):
         if self.gmodel.__class__.__name__ in self.supported_linear_models:
-            return self.model.coef_
+            return self.gmodel.coef_
         else:
             raise ValueError(
                 "Detector model not supported. Supported models ar linear: {}, got {}".format(
