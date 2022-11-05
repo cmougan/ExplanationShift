@@ -135,3 +135,10 @@ shap.plots.bar(shap_values, show=False)
 plt.show()
 
 # %%
+m = XGBClassifier(random_state=0)
+
+# %%
+m.__class__.__name__
+# %%
+a = pd.DataFrame(data=[1,2,3], columns=['AA'])
+# %%
