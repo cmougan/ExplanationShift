@@ -1,6 +1,8 @@
 # %%
 import numpy as np
 import matplotlib.pyplot as plt
+
+plt.rcParams.update({"font.size": 14})
 import seaborn as sns
 import pandas as pd
 import random
@@ -55,8 +57,8 @@ plt.axvline(ood_auc[2], label=states[2], color="#7DFDFE")
 plt.axvline(ood_auc[3], label=states[3], color="#6F4E37")
 plt.axvline(ood_auc[4], label=states[4], color="#EB5406")
 plt.axvline(ood_auc[5], label=states[5], color="#8E7618")
-plt.savefig("images/AUC_OOD.png")
 plt.legend()
+plt.savefig("images/AUC_OOD.png")
 plt.show()
 # %%
 # Analysis of performance of G
@@ -80,4 +82,12 @@ for i in range(len(ood_coefs)):
 # %%
 coefs_res["mean"] = coefs_res.mean(axis=1)
 coefs_res.sort_values(by="mean", ascending=True)
+# %%
+coefs_res.sort_values(by="mean", ascending=True).shape
+# %%
+plt.figure(figsize=(10, 6))
+plt.title("Feature importance of the Explanation Shift detector (p-values)")
+sns.heatmap(coefs_res.sort_values(by="mean", ascending=True), annot=True)
+plt.savefig("images/feature_importance.png")
+plt.show()
 # %%
