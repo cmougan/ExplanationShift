@@ -54,8 +54,7 @@ class ShapEstimator(BaseEstimator, ClassifierMixin):
 class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
     """
     Given a model, and two datasets (source,test), we want to know if the behaviour of the model is different bt train and test.
-
-
+    We can do this by computing the shap values of the model on the two datasets, and then train a classifier to distinguish between the two datasets.
 
     Example
     -------
@@ -71,10 +70,12 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
     >>> X_ood,y_ood = make_blobs(n_samples=1000, centers=1, n_features=5, random_state=0)
 
     >>> detector = ExplanationShiftDetector(model=XGBRegressor(),gmodel=LogisticRegression())
-    >>> detector.get_auc(X_tr, y_tr, X_ood)
+    >>> detector.fit(X_tr, y_tr, X_ood)
+    >>> detector.get_auc_val()
     # 0.76
-    >>> detector.get_auc(X_tr, y_tr, X_te)
-    # 0.52
+    >>> detector.fit(X_tr, y_tr, X_te)
+    >>> detector.get_auc_val()
+    # 0.5
     """
 
     def __init__(self, model, gmodel):
@@ -195,28 +196,28 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         return exp
 
     def get_auc_val(self):
+        """
+        Returns the AUC of the explanation shift detector on the validation set of the explanation space
+        Example
+        -------
+        from sklearn.model_selection import train_test_split
+        from sklearn.datasets import make_blobs
+        from tools.xaiUtils import ExplanationShiftDetector
+        from xgboost import XGBRegressor
+        from sklearn.linear_model import LogisticRegression
+
+        # Create data
+        X, y = make_blobs(n_samples=2000, centers=2, n_features=5, random_state=0)
+        X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.5, random_state=0)
+        X_ood,y_ood = make_blobs(n_samples=1000, centers=1, n_features=5, random_state=0)
+
+        detector = ExplanationShiftDetector(model=XGBRegressor(),gmodel=LogisticRegression())
+        detector.fit(X_tr, y_tr, X_ood)
+        detector.get_auc_val()
+        # 0.76
+
+        """
         return roc_auc_score(self.y_shap_te, self.explanation_predict(self.X_shap_te))
-
-    def get_auc_(self, X, y, X_ood):
-        """
-        Determine if the model is behaving differently on the two datasets.
-        Receives train and data to test
-        Returns AUC of classification bt train and test
-
-        Steps:
-        1. Split source in train and val
-        2. Train model on train
-        3. Get the explanations of the model on val and test.
-        4. Fit a classifier (gmodel) on the explanations of val and test, to predict to which distribution it belongs.
-        5. Return the AUC of a hold out set of step 4.
-        """
-
-        X_shap = self.get_all_explanations(X, y, X_ood)
-        X_shap_tr, X_shap_te, y_shap_tr, y_shap_te = train_test_split(
-            X_shap.drop(columns="label"), X_shap["label"], random_state=0, test_size=0.5
-        )
-        self.fit_explanation_shift(X_shap_tr, y_shap_tr)
-        return roc_auc_score(y_shap_te, self.gmodel.predict_proba(X_shap_te)[:, 1])
 
     def get_coefs(self):
         if self.gmodel.__class__.__name__ in self.supported_linear_models:
