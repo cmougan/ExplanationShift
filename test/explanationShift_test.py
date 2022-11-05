@@ -67,7 +67,7 @@ def test_doc_examples():
     assert np.round(detector.get_auc_val(), decimals=2) == 0.77
     # On test
     detector.fit(X_source=X_tr, y_source=y_tr, X_ood=X_te)
-    assert np.round(detector.get_auc_val(), decimals=2) == 0.5
+    assert np.round(detector.get_auc_val(), decimals=2) == 0.53
 
 
 def test_no_nan():

@@ -161,6 +161,9 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
     def explanation_predict(self, X):
         return self.gmodel.predict(X)
 
+    def explanation_predict_proba(self, X):
+        return self.gmodel.predict_proba(X)
+
     def fit_model(self, X, y):
         self.model.fit(X, y)
 
@@ -217,7 +220,9 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         # 0.76
 
         """
-        return roc_auc_score(self.y_shap_te, self.explanation_predict(self.X_shap_te))
+        return roc_auc_score(
+            self.y_shap_te, self.explanation_predict_proba(self.X_shap_te)[:, 1]
+        )
 
     def get_coefs(self):
         if self.gmodel.__class__.__name__ in self.supported_linear_models:
