@@ -116,6 +116,50 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
                 )
             )
 
+    def fit(self, X_source, y_source, X_ood):
+
+        # Check that X and y have correct shape
+        check_X_y(X_source, y_source)
+        self.X_ood = X_ood
+
+        self.X_tr, self.X_val, self.y_tr, self.y_val = train_test_split(
+            X_source, y_source, random_state=0, test_size=0.5
+        )
+
+        # Fit model F
+        self.fit_model(self.X_tr, self.y_tr)
+
+        # Get explanations
+        self.S_val = self.get_explanations(self.X_val)
+        self.S_ood = self.get_explanations(self.X_ood)
+
+        # Create dataset for  explanation shift detector
+        self.S_val["label"] = 1
+        self.S_ood["label"] = 0
+
+        self.S = pd.concat([self.S_val, self.S_ood])
+
+        (
+            self.X_shap_tr,
+            self.X_shap_te,
+            self.y_shap_tr,
+            self.y_shap_te,
+        ) = train_test_split(
+            self.S.drop(columns="label"), self.S["label"], random_state=0, test_size=0.5
+        )
+        self.fit_explanation_shift(self.X_shap_tr, self.y_shap_tr)
+
+        return self
+
+    def predict(self, X):
+        return self.gmodel.predict(self.get_explanations(X))
+
+    def predict_proba(self, X):
+        return self.gmodel.predict_proba(self.get_explanations(X))
+
+    def explanation_predict(self, X):
+        return self.gmodel.predict(X)
+
     def fit_model(self, X, y):
         self.model.fit(X, y)
 
@@ -150,22 +194,10 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         )
         return exp
 
-    def get_iid_explanations(self, X, y):
-        # Does too many things, getting and setting, not good
-        X_tr, X_te, y_tr, y_te = train_test_split(X, y, random_state=0, test_size=0.5)
-        self.fit_model(X_tr, y_tr)
-        self.explainer = shap.Explainer(self.model)
-        return self.get_explanations(X_te)
+    def get_auc_val(self):
+        return roc_auc_score(self.y_shap_te, self.explanation_predict(self.X_shap_te))
 
-    def get_all_explanations(self, X, y, X_ood):
-        X_iid = self.get_iid_explanations(X, y)
-        X_ood = self.get_explanations(X_ood)
-        X_iid["label"] = 0
-        X_ood["label"] = 1
-        X = pd.concat([X_iid, X_ood])
-        return X
-
-    def get_auc(self, X, y, X_ood):
+    def get_auc_(self, X, y, X_ood):
         """
         Determine if the model is behaving differently on the two datasets.
         Receives train and data to test
