@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 random.seed(0)
 from sklearn.linear_model import LogisticRegression
+
 # Scikit Learn
 from sklearn.model_selection import train_test_split
 
@@ -82,13 +83,13 @@ class ShiftDetector:
         self.model = model
         self.gmodel = gmodel
         self.explainer = None
-    
+
     def fit_model(self, X, y):
         self.model.fit(X, y)
-    
+
     def fit_explanation_space(self, X, y):
         self.gmodel.fit(X, y)
-    
+
     def get_explanations(self, X):
         shap_values = self.explainer(X)
         exp = pd.DataFrame(
@@ -96,16 +97,14 @@ class ShiftDetector:
             columns=["Shap%d" % (i + 1) for i in range(X.shape[1])],
         )
         return exp
-    
+
     def get_iid_explanations(self, X, y):
         # Does too many things, getting and setting, not good
-        X_tr, X_te, y_tr, y_te = train_test_split(
-            X, y, random_state=0, test_size=0.5
-        )
+        X_tr, X_te, y_tr, y_te = train_test_split(X, y, random_state=0, test_size=0.5)
         self.fit_model(X_tr, y_tr)
         self.explainer = shap.Explainer(self.model)
         return self.get_explanations(X_te)
-    
+
     def get_all_explanations(self, X, y, X_ood):
         X_iid = self.get_iid_explanations(X, y)
         X_ood = self.get_explanations(X_ood)
@@ -113,7 +112,7 @@ class ShiftDetector:
         X_ood["label"] = 1
         X = pd.concat([X_iid, X_ood])
         return X
-    
+
     def get_auc(self, X, y, X_ood):
         X_shap = self.get_all_explanations(X, y, X_ood)
         X_shap_tr, X_shap_te, y_shap_tr, y_shap_te = train_test_split(
@@ -121,19 +120,17 @@ class ShiftDetector:
         )
         self.fit_explanation_space(X_shap_tr, y_shap_tr)
         return roc_auc_score(y_shap_te, self.gmodel.predict_proba(X_shap_te)[:, 1])
-        
+
 
 # %%
 ShiftDetector(model, gmodel).get_auc(X, y, X_ood)
 # %% Build AUC interval
 aucs = []
 for _ in tqdm(range(100)):
-    X_train, X_test, y_tr, y_te = train_test_split(
-        X, y, test_size=0.5
-    )
+    X_train, X_test, y_tr, y_te = train_test_split(X, y, test_size=0.5)
     auc = ShiftDetector(model, gmodel).get_auc(X_train, y_tr, X_test)
     aucs.append(auc)
-    
+
 
 # %%
 ood_auc = ShiftDetector(model, gmodel).get_auc(X, y, X_ood)

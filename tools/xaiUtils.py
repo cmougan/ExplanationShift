@@ -57,8 +57,13 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         self.explainer = None
 
         # Supported Tree Models
-        self.supported_tree_models = ["XGBClassifier",'XGBRegressor']
-        self.supported_linear_models = ['LogisticRegression','LinearRegression','Ridge','Lasso']
+        self.supported_tree_models = ["XGBClassifier", "XGBRegressor"]
+        self.supported_linear_models = [
+            "LogisticRegression",
+            "LinearRegression",
+            "Ridge",
+            "Lasso",
+        ]
 
         if self.model.__class__.__name__ not in self.supported_tree_models:
             raise ValueError(
@@ -68,20 +73,22 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
             )
         if self.gmodel.__class__.__name__ != "LogisticRegression":
             raise ValueError("gmodel must be a LogisticRegression model")
-    
+
     def fit_model(self, X, y):
         self.model.fit(X, y)
-    
+
     def fit_explanation_shift(self, X, y):
         self.gmodel.fit(X, y)
-    
+
     def get_explanations(self, X):
         # Determine the type of SHAP explainer to use
         if self.model.__class__.__name__ == self.supported_tree_models:
             self.explainer = shap.Explainer(self.model)
         elif self.model.__class__.__name__ == self.supported_linear_models:
-            self.explainer = shap.LinearExplainer(self.model, X, feature_dependence="correlation_dependent")
-        
+            self.explainer = shap.LinearExplainer(
+                self.model, X, feature_dependence="correlation_dependent"
+            )
+
         shap_values = self.explainer(X)
         # Name columns
         if isinstance(X, pd.DataFrame):
@@ -94,16 +101,14 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
             columns=columns_name,
         )
         return exp
-    
+
     def get_iid_explanations(self, X, y):
         # Does too many things, getting and setting, not good
-        X_tr, X_te, y_tr, y_te = train_test_split(
-            X, y, random_state=0, test_size=0.5
-        )
+        X_tr, X_te, y_tr, y_te = train_test_split(X, y, random_state=0, test_size=0.5)
         self.fit_model(X_tr, y_tr)
         self.explainer = shap.Explainer(self.model)
         return self.get_explanations(X_te)
-    
+
     def get_all_explanations(self, X, y, X_ood):
         X_iid = self.get_iid_explanations(X, y)
         X_ood = self.get_explanations(X_ood)
@@ -111,7 +116,7 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         X_ood["label"] = 1
         X = pd.concat([X_iid, X_ood])
         return X
-    
+
     def get_auc(self, X, y, X_ood):
         X_shap = self.get_all_explanations(X, y, X_ood)
         X_shap_tr, X_shap_te, y_shap_tr, y_shap_te = train_test_split(
@@ -119,4 +124,3 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         )
         self.fit_explanation_space(X_shap_tr, y_shap_tr)
         return roc_auc_score(y_shap_te, self.gmodel.predict_proba(X_shap_te)[:, 1])
-        
