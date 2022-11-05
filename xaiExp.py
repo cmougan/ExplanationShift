@@ -37,9 +37,11 @@ detector.fit(X, y, X_ood)
 ood_auc = detector.get_auc_val()
 # %%
 # Plot AUC
+plt.title("AUC distribution of the performance of the Explanation Shift detector")
 plt.figure(figsize=(10, 6))
-sns.kdeplot(aucs)
+sns.kdeplot(aucs, fill=True, label="In-Distribution AUC")
 plt.axvline(ood_auc, color="red", label="OOD AUC")
+plt.legend()
 plt.show()
 # %% This is a p-value
 np.mean(aucs > ood_auc)
