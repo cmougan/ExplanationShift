@@ -1,7 +1,7 @@
 from tools.xaiUtils import ExplanationShiftDetector
 
 
-from xgboost import XGBRegressor
+from xgboost import XGBClassifier, XGBRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import make_blobs
@@ -26,34 +26,30 @@ def test_return_shapDF():
     assert all([a == b for a, b in zip(ex.columns, X.columns)])
 
 
-def check_supported_models():
-    # dont think this works
+def test_supported_models():
     """
     Check that models are supported.
     """
-
-    from sklearn.linear_model import LogisticRegression
-    from xgboost import XGBClassifier, XGBRegressor
-
     for model in [XGBRegressor(), LogisticRegression()]:
         for gmodel in [XGBClassifier(), LogisticRegression()]:
             assert (
                 type(ExplanationShiftDetector(model=model, gmodel=gmodel))
-                is tools.xaiUtils.ExplanationShiftDetector
+                is ExplanationShiftDetector
             )
 
 
-def check_not_supported_models():
-    # dont think this works
+def test_not_supported_models():
     """
     Check that models are not supported.
     """
 
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.neural_network import MLPClassifier, MLPRegressor
+    from sklearn.neural_network import MLPClassifier
+    import pytest
 
     with pytest.raises(ValueError):
-        ExplanationShiftDetector(model=jjj, gmodel=LogisticRegression())
+        ExplanationShiftDetector(model=MLPClassifier(), gmodel=LogisticRegression())
+    with pytest.raises(ValueError):
+        ExplanationShiftDetector(model=LinearRegression(), gmodel=MLPClassifier())
 
 
 def test_doc_examples():
