@@ -97,11 +97,13 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
             self.supported_tree_models + self.supported_linear_models
         )
         # Supported detectors
-        self.supported_detectors = [
+        self.supported_linear_detectors = [
             "LogisticRegression",
-            "RandomForestClassifier",
-            "XGBClassifier",
         ]
+        self.supported_tree_detectors = ["XGBClassifier"]
+        self.supported_detectors = (
+            self.supported_linear_detectors + self.supported_tree_detectors
+        )
 
         # Check if models are supported
         if self.model.__class__.__name__ not in self.supported_models:
@@ -182,3 +184,13 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         )
         self.fit_explanation_shift(X_shap_tr, y_shap_tr)
         return roc_auc_score(y_shap_te, self.gmodel.predict_proba(X_shap_te)[:, 1])
+
+    def get_coefs(self):
+        if self.gmodel.__class__.__name__ in self.supported_linear_models:
+            return self.model.coef_
+        else:
+            raise ValueError(
+                "Detector model not supported. Supported models ar linear: {}, got {}".format(
+                    self.supported_linear_detector, self.model.__class__.__name__
+                )
+            )

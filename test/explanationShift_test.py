@@ -66,3 +66,29 @@ def test_doc_examples():
     assert np.round(detector.get_auc(XX_tr, yy_tr, XX_ood), decimals=2) == 0.77
 
     assert np.round(detector.get_auc(XX_tr, yy_tr, XX_te), decimals=2) == 0.53
+
+
+def test_no_nan():
+    """
+    Check that no NaNs are present in the shap values.
+    """
+    esd = ExplanationShiftDetector(
+        model=LinearRegression(), gmodel=LogisticRegression()
+    )
+    esd.fit_model(X, y)
+    ex = esd.get_explanations(X)
+    assert not np.any(np.isnan(ex))
+
+def test_get_coefs():
+    """
+    Check that the coefficients are returned correctly.
+    """
+    esd = ExplanationShiftDetector(
+        model=LinearRegression(), gmodel=LogisticRegression()
+    )
+    esd.fit_model(X, y)
+    coefs = esd.get_coefs()
+    # Assert shape
+    assert coefs.shape == (X.shape[1],)
+    # Assert that there is non NaNs
+    assert not np.any(np.isnan(coefs))
