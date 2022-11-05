@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.datasets import make_blobs
-from folktables import ACSDataSource, ACSEmployment
+from folktables import ACSDataSource, ACSTravelTime
 import numpy as np
 
 
@@ -77,15 +77,15 @@ class GetData:
                 acs_data = data_source.get_data(states=["CA"], download=False)
             except:
                 acs_data = data_source.get_data(states=["CA"], download=True)
-            X, y, group = ACSEmployment.df_to_numpy(acs_data)
-            X = pd.DataFrame(X, columns=ACSEmployment.features)
+            X, y, group = ACSTravelTime.df_to_numpy(acs_data)
+            X = pd.DataFrame(X, columns=ACSTravelTime.features)
             # Lets make smaller data for computational reasons
             self.X = X.head(10_000)
             self.y = y[:10_000]
             # OOD data
             acs_data = data_source.get_data(states=["NY"], download=True)
-            X_ood, y_ood, group = ACSEmployment.df_to_numpy(acs_data)
-            X_ood = pd.DataFrame(X_ood, columns=ACSEmployment.features)
+            X_ood, y_ood, group = ACSTravelTime.df_to_numpy(acs_data)
+            X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features)
             self.X_ood = X_ood.head(5_000)
             self.y_ood = y_ood[:5_000]
         else:
@@ -100,8 +100,8 @@ class GetData:
             acs_data = data_source.get_data(states=[state], download=False)
         except:
             acs_data = data_source.get_data(states=[state], download=True)
-        X_ood, y_ood, group = ACSEmployment.df_to_numpy(acs_data)
-        X_ood = pd.DataFrame(X_ood, columns=ACSEmployment.features)
+        X_ood, y_ood, group = ACSTravelTime.df_to_numpy(acs_data)
+        X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features)
         self.X_ood = X_ood.head(5_000)
         self.y_ood = y_ood[:5_000]
         return self.X_ood, self.y_ood
