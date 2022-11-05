@@ -9,6 +9,8 @@ random.seed(0)
 # Scikit Learn
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from tools.xaiUtils import ExplanationShiftDetector
+from sklearn.datasets import make_blobs
 
 plt.style.use("seaborn-whitegrid")
 from xgboost import XGBRegressor, XGBClassifier
@@ -17,7 +19,7 @@ from folktables import ACSDataSource, ACSEmployment
 
 # %%
 # Do we want synthetic or real data?
-synthetic_data = True
+synthetic_data = "blobs"
 if synthetic_data:
     ## Synthetic data
     ### Normal
@@ -52,6 +54,13 @@ if synthetic_data:
     X_tr, X_te, y_tr, y_te = train_test_split(
         df.drop(columns="target"), df["target"], test_size=0.5, random_state=0
     )
+elif synthetic_data == "blobs":
+    X, y = make_blobs(n_samples=2000, centers=2, n_features=5, random_state=0)
+    X = pd.DataFrame(X, columns=["a", "b", "c", "d", "e"])
+    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.5, random_state=0)
+    X_ood = make_blobs(n_samples=1000, centers=1, n_features=5, random_state=0)
+
+
 else:
     ## Real data based on US census data
     data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
@@ -69,6 +78,17 @@ else:
     X_ood = X_ood.head(5_000)
     y_ood = y_ood[:5_000]
 # %%
+
+# %%
+detector = ExplanationShiftDetector(model=XGBRegressor(), gmodel=LogisticRegression())
+
+detector.get_auc(X_tr, y_tr, X_ood)
+
+
+# %%# %%
+# %%
+# %%
+kk
 ## Fit our ML model
 model = XGBRegressor(random_state=0)
 # model = LinearRegression()
