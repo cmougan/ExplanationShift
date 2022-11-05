@@ -53,12 +53,9 @@ class ShapEstimator(BaseEstimator, ClassifierMixin):
 
 class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
     """
-    Given a model, and two datasets (train,test), we want to know if the behaviour of the model is different bt train and test.
+    Given a model, and two datasets (source,test), we want to know if the behaviour of the model is different bt train and test.
 
-    1. Fit the model on train
-    2. Get the explanations of the model on train and test.
-    3. Fit a classifier (gmodel) on the explanations of train and test, to predict to which distribution it belongs.
-    4. Return the AUC.
+
 
     Example
     -------
@@ -175,7 +172,11 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         Returns AUC of classification bt train and test
 
         Steps:
-
+        1. Split source in train and val
+        2. Train model on train
+        3. Get the explanations of the model on val and test.
+        4. Fit a classifier (gmodel) on the explanations of val and test, to predict to which distribution it belongs.
+        5. Return the AUC of a hold out set of step 4.
         """
 
         X_shap = self.get_all_explanations(X, y, X_ood)
