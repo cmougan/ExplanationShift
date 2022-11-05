@@ -79,6 +79,7 @@ def test_no_nan():
     ex = esd.get_explanations(X)
     assert not np.any(np.isnan(ex))
 
+
 def test_get_coefs():
     """
     Check that the coefficients are returned correctly.
@@ -90,5 +91,5 @@ def test_get_coefs():
     coefs = esd.get_coefs()
     # Assert shape
     assert coefs.shape == (X.shape[1],)
-    # Assert that there is non NaNs
+    # Assert that there is non NaNs
     assert not np.any(np.isnan(coefs))
