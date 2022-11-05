@@ -1,10 +1,12 @@
 from tools.xaiUtils import ExplanationShiftDetector
 
-from sklearn.ensemble import GradientBoostingRegressor
+
+from xgboost import XGBRegressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import train_test_split
 from sklearn.datasets import make_blobs
 import pandas as pd
+import numpy as np
 
 
 X, y = make_blobs(n_samples=100, centers=2, n_features=5, random_state=0)
@@ -52,3 +54,19 @@ def check_not_supported_models():
 
     with pytest.raises(ValueError):
         ExplanationShiftDetector(model=jjj, gmodel=LogisticRegression())
+
+
+def test_doc_examples():
+    """
+    Check that doc examples work.
+    """
+    XX, yy = make_blobs(n_samples=2000, centers=2, n_features=5, random_state=0)
+    XX_tr, XX_te, yy_tr, yy_te = train_test_split(XX, yy, test_size=0.5, random_state=0)
+    XX_ood, yy_ood = make_blobs(n_samples=1000, centers=1, n_features=5, random_state=0)
+
+    detector = ExplanationShiftDetector(
+        model=XGBRegressor(), gmodel=LogisticRegression()
+    )
+    assert np.round(detector.get_auc(XX_tr, yy_tr, XX_ood), decimals=2) == 0.77
+
+    assert np.round(detector.get_auc(XX_tr, yy_tr, XX_te), decimals=2) == 0.53
