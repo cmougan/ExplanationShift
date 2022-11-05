@@ -71,9 +71,12 @@ class GetData:
         elif self.type == "real":
             ## Real data based on US census data
             data_source = ACSDataSource(
-                survey_year="2018", horizon="1-Year", survey="person"
+                survey_year="2014", horizon="1-Year", survey="person"
             )
-            acs_data = data_source.get_data(states=["CA"], download=True)
+            try:
+                acs_data = data_source.get_data(states=["CA"], download=False)
+            except:
+                acs_data = data_source.get_data(states=["CA"], download=True)
             X, y, group = ACSEmployment.df_to_numpy(acs_data)
             X = pd.DataFrame(X, columns=ACSEmployment.features)
             # Lets make smaller data for computational reasons
@@ -89,3 +92,16 @@ class GetData:
             raise ValueError("type must be one of {}".format(self.supported_types))
 
         return self.X, self.y, self.X_ood, self.y_ood
+
+    def get_state(self, year: str = "2014", state: str = "NY"):
+        # OOD data
+        data_source = ACSDataSource(survey_year=year, horizon="1-Year", survey="person")
+        try:
+            acs_data = data_source.get_data(states=[state], download=False)
+        except:
+            acs_data = data_source.get_data(states=[state], download=True)
+        X_ood, y_ood, group = ACSEmployment.df_to_numpy(acs_data)
+        X_ood = pd.DataFrame(X_ood, columns=ACSEmployment.features)
+        self.X_ood = X_ood.head(5_000)
+        self.y_ood = y_ood[:5_000]
+        return self.X_ood, self.y_ood
