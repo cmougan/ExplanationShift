@@ -1,156 +1,106 @@
 # %%
-import random
-
 import matplotlib.pyplot as plt
 import numpy as np
+
+plt.rcParams.update({"font.size": 14})
+import random
+
 import pandas as pd
-from sklearn.metrics import roc_auc_score
+import seaborn as sns
 from tqdm import tqdm
 
 random.seed(0)
+import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 
 # Scikit Learn
 from sklearn.model_selection import train_test_split
 
+from tools.xaiUtils import ExplanationShiftDetector
+
 plt.style.use("seaborn-whitegrid")
-import shap
-from folktables import ACSDataSource, ACSEmployment
-from xgboost import XGBRegressor
+from xgboost import XGBClassifier
+
+from tools.datasets import GetData
+from tools.xaiUtils import ExplanationShiftDetector
 
 # %%
-# Do we want synthetic or real data?
-## Synthetic data
-### Normal
-synthetic_data = False
-if synthetic_data:
-    ## Synthetic data
-    ### Normal
-    sigma = 1
-    rho = 0.5
-    mean = [0, 0]
-    cov = [[sigma, 0], [0, sigma]]
-    samples = 5_000
-    x1, x2 = np.random.multivariate_normal(mean, cov, samples).T
-    x3 = np.random.normal(0, sigma, samples)
-    # Different values
-    mean = [0, 0]
-    cov = [[sigma, rho], [rho, sigma]]
-    x11, x22 = np.random.multivariate_normal(mean, cov, samples).T
-    x33 = np.random.normal(0, sigma, samples)
+data = GetData(type="real")
+X, y, X_ood, y_ood = data.get_data()
 
-    # Create Data
-    df = pd.DataFrame(data=[x1, x2, x3]).T
-    df.columns = ["Var%d" % (i + 1) for i in range(df.shape[1])]
-    df["target"] = (
-        df["Var1"] * df["Var2"] + df["Var3"] + np.random.normal(0, 0.1, samples)
-    )
-    X_ood = pd.DataFrame(data=[x11, x22, x33]).T
-    X_ood.columns = ["Var%d" % (i + 1) for i in range(X_ood.shape[1])]
-    y_ood = (
-        X_ood["Var1"] * X_ood["Var2"]
-        + X_ood["Var3"]
-        + np.random.normal(0, 0.1, samples)
-    )
-    X = df.drop(columns="target")
-    y = df["target"]
-
-else:
-    ## Real data based on US census data
-    data_source = ACSDataSource(survey_year="2018", horizon="1-Year", survey="person")
-    acs_data = data_source.get_data(states=["CA"], download=True)
-    X, y, group = ACSEmployment.df_to_numpy(acs_data)
-    X = pd.DataFrame(X, columns=ACSEmployment.features)
-    # Lets make smaller data for computational reasons
-    X = X.head(10_000)
-    y = y[:10_000]
-    # OOD data
-    acs_data = data_source.get_data(states=["NY"], download=True)
-    X_ood, y_ood, group = ACSEmployment.df_to_numpy(acs_data)
-    X_ood = pd.DataFrame(X_ood, columns=ACSEmployment.features)
-    X_ood = X_ood.head(5_000)
-    y_ood = y_ood[:5_000]
-
-
+X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(X, y, test_size=0.5)
+X, y = X_cal_1, y_cal_1
 # %%
-## Fit our ML model
-model = XGBRegressor(random_state=0)
-gmodel = LogisticRegression()
-
-# %%
-class ShiftDetector:
-    def __init__(self, model, gmodel):
-        self.model = model
-        self.gmodel = gmodel
-        self.explainer = None
-
-    def fit_model(self, X, y):
-        self.model.fit(X, y)
-
-    def fit_explanation_space(self, X, y):
-        self.gmodel.fit(X, y)
-
-    def get_explanations(self, X):
-        shap_values = self.explainer(X)
-        exp = pd.DataFrame(
-            data=shap_values.values,
-            columns=["Shap%d" % (i + 1) for i in range(X.shape[1])],
-        )
-        return exp
-
-    def get_iid_explanations(self, X, y):
-        # Does too many things, getting and setting, not good
-        X_tr, X_te, y_tr, y_te = train_test_split(X, y, random_state=0, test_size=0.5)
-        self.fit_model(X_tr, y_tr)
-        self.explainer = shap.Explainer(self.model)
-        return self.get_explanations(X_te)
-
-    def get_all_explanations(self, X, y, X_ood):
-        X_iid = self.get_iid_explanations(X, y)
-        X_ood = self.get_explanations(X_ood)
-        X_iid["label"] = 0
-        X_ood["label"] = 1
-        X = pd.concat([X_iid, X_ood])
-        return X
-
-    def get_auc(self, X, y, X_ood):
-        X_shap = self.get_all_explanations(X, y, X_ood)
-        X_shap_tr, X_shap_te, y_shap_tr, y_shap_te = train_test_split(
-            X_shap.drop(columns="label"), X_shap["label"], random_state=0, test_size=0.5
-        )
-        self.fit_explanation_space(X_shap_tr, y_shap_tr)
-        return roc_auc_score(y_shap_te, self.gmodel.predict_proba(X_shap_te)[:, 1])
-
-
-# %%
-ShiftDetector(model, gmodel).get_auc(X, y, X_ood)
+detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegression())
 # %% Build AUC interval
 aucs = []
-for _ in tqdm(range(100)):
-    X_train, X_test, y_tr, y_te = train_test_split(X, y, test_size=0.5)
-    auc = ShiftDetector(model, gmodel).get_auc(X_train, y_tr, X_test)
-    aucs.append(auc)
-
+cofs = []
+for _ in tqdm(range(20)):
+    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.5)
+    detector.fit(X_tr, y_tr, X_te)
+    aucs.append(detector.get_auc_val())
+    cofs.append(detector.get_coefs()[0])
+# %%
+## OOD AUC
+ood_auc = []
+ood_coefs = []
+states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18"]
 
 # %%
-ood_auc = ShiftDetector(model, gmodel).get_auc(X, y, X_ood)
+for state in states:
+    X_ood, _ = data.get_state(state=state[:2], year="20" + state[2:])
+    detector.fit(X, y, X_ood)
+    ood_auc.append(detector.get_auc_val())
+    ood_coefs.append(detector.get_coefs())
+
 # %%
-aucs = np.array(aucs)
+detector.fit(X, y, X_cal_2)
+ood_auc.append(detector.get_auc_val())
+ood_coefs.append(detector.get_coefs())
 
-# %% This is a p-value
-np.mean(aucs > ood_auc)
-# %% no-shift confidence interval
-lower = np.quantile(aucs, 0.025)
-upper = np.quantile(aucs, 0.975)
-lower, upper
-# %% For a random in-distribution sample, we get a low p-value
-np.mean(aucs > aucs[5])
+# %%
+# Plot AUC
+plt.figure(figsize=(10, 6))
+plt.title("AUC OOD performance of the Explanation Shift detector")
+sns.kdeplot(aucs, fill=True, label="In-Distribution AUC")
+plt.axvline(ood_auc[0], label=states[0], color="#00BFFF")
+# %%
+plt.axvline(ood_auc[1], label=states[1], color="#C68E17")
+plt.axvline(ood_auc[2], label=states[2], color="#7DFDFE")
+plt.axvline(ood_auc[3], label=states[3], color="#6F4E37")
+plt.axvline(ood_auc[4], label=states[4], color="#EB5406")
+plt.axvline(ood_auc[5], label=states[5], color="#8E7618")
+plt.legend()
+plt.savefig("images/AUC_OOD.png")
+plt.show()
+# %%
+# Analysis of performance of G
+#  This is a p-value
+# print("Pvalue: ", np.mean(aucs > ood_auc))
+# no-shift confidence interval
+# lower = np.quantile(aucs, 0.025)
+# upper = np.quantile(aucs, 0.975)
+# print("No-shift confidence interval: {:.2f},{:.2f} ".format(lower, upper))
+# print("For a random in-distribution sample, we get a low p-value {:.2f}".format(np.mean(aucs > aucs[5])))
+# print("See, for each distribution sample, if we would reject with alpha = 0.05",np.mean((aucs >= lower) * (aucs <= upper)),)
+# print("{} of the times we wouldnt reject with alpha = 0.05".format(np.mean((aucs >= lower) * (aucs <= upper))))
 
-# %% See, for each distribution sample, if we would reject with alpha = 0.05
-# 95% of the times we wouldn't reject with alpha = 0.05
-np.mean((aucs >= lower) * (aucs <= upper))
+# %%
+# Analysis of coeficients
+coefs = pd.DataFrame(cofs, columns=X.columns)
+coefs_res = pd.DataFrame(index=coefs.columns)
+for i in range(len(ood_coefs)):
+    coefs_res[states[i]] = np.mean(coefs < ood_coefs[i])
 
-# TODO: Think if we should do one-sided or two-sided test
-
-
+# %%
+coefs_res["mean"] = coefs_res.mean(axis=1)
+coefs_res.sort_values(by="mean", ascending=True)
+# %%
+coefs_res.sort_values(by="mean", ascending=True).shape
+# %%
+plt.figure(figsize=(10, 6))
+plt.title("Feature importance of the Explanation Shift detector (p-values)")
+sns.heatmap(coefs_res.sort_values(by="mean", ascending=True), annot=True)
+plt.savefig("images/feature_importance.png")
+plt.show()
 # %%

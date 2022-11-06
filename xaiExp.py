@@ -30,7 +30,7 @@ detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegres
 # %% Build AUC interval
 aucs = []
 cofs = []
-for _ in tqdm(range(20)):
+for _ in tqdm(range(50)):
     X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.5)
     detector.fit(X_tr, y_tr, X_te)
     aucs.append(detector.get_auc_val())
@@ -39,7 +39,7 @@ for _ in tqdm(range(20)):
 ## OOD AUC
 ood_auc = []
 ood_coefs = []
-states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18"]
+states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18", "CA18", "CA14"]
 
 for state in states:
     X_ood, _ = data.get_state(state=state[:2], year="20" + state[2:])
@@ -50,13 +50,15 @@ for state in states:
 # Plot AUC
 plt.figure(figsize=(10, 6))
 plt.title("AUC OOD performance of the Explanation Shift detector")
-sns.kdeplot(aucs, fill=True, label="In-Distribution AUC")
+sns.kdeplot(aucs, fill=True, label="In-Distribution (CA14)")
 plt.axvline(ood_auc[0], label=states[0], color="#00BFFF")
 plt.axvline(ood_auc[1], label=states[1], color="#C68E17")
 plt.axvline(ood_auc[2], label=states[2], color="#7DFDFE")
 plt.axvline(ood_auc[3], label=states[3], color="#6F4E37")
 plt.axvline(ood_auc[4], label=states[4], color="#EB5406")
 plt.axvline(ood_auc[5], label=states[5], color="#8E7618")
+plt.axvline(ood_auc[6], label=states[6], color="r")
+plt.axvline(ood_auc[7], label=states[7])
 plt.legend()
 plt.savefig("images/AUC_OOD.png")
 plt.show()
