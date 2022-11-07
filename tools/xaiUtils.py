@@ -104,18 +104,30 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         )
 
         # Check if models are supported
-        if self.model.__class__.__name__ not in self.supported_models:
+        if self.get_model_type() not in self.supported_models:
             raise ValueError(
                 "Model not supported. Supported models are: {} got {}".format(
                     self.supported_models, self.model.__class__.__name__
                 )
             )
-        if self.gmodel.__class__.__name__ not in self.supported_detectors:
+        if self.get_gmodel_type() not in self.supported_detectors:
             raise ValueError(
                 "gmodel not supported. Supported models are: {} got {}".format(
                     self.supported_detectors, self.gmodel.__class__.__name__
                 )
             )
+
+    def get_gmodel_type(self):
+        if self.gmodel.__class__.__name__ == "Pipeline":
+            return self.gmodel.steps[-1][1].__class__.__name__
+        else:
+            return self.gmodel.__class__.__name__
+
+    def get_model_type(self):
+        if self.model.__class__.__name__ == "Pipeline":
+            return self.model.steps[-1][1].__class__.__name__
+        else:
+            return self.model.__class__.__name__
 
     def fit(self, X_source, y_source, X_ood):
 
@@ -172,9 +184,9 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
 
     def get_explanations(self, X):
         # Determine the type of SHAP explainer to use
-        if self.model.__class__.__name__ in self.supported_tree_models:
+        if self.get_model_type() in self.supported_tree_models:
             self.explainer = shap.Explainer(self.model)
-        elif self.model.__class__.__name__ in self.supported_linear_models:
+        elif self.get_model_type() in self.supported_linear_models:
             self.explainer = shap.LinearExplainer(
                 self.model, X, feature_dependence="correlation_dependent"
             )
@@ -225,6 +237,23 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         )
 
     def get_coefs(self):
+        if self.gmodel.__class__.__name__ == "Pipeline":
+            if (
+                self.gmodel.steps[-1][1].__class__.__name__
+                in self.supported_linear_models
+            ):
+                return self.gmodel.steps[-1][1].coef_
+            else:
+                raise ValueError(
+                    "Pipeline model not supported. Supported models are: {}, got {}".format(
+                        self.supported_linear_models,
+                        self.gmodel.steps[-1][1].__class__.__name__,
+                    )
+                )
+        else:
+            return self.get_linear_coefs()
+
+    def get_linear_coefs(self):
         if self.gmodel.__class__.__name__ in self.supported_linear_models:
             return self.gmodel.coef_
         else:
