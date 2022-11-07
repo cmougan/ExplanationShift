@@ -3,6 +3,25 @@ from sklearn.datasets import make_blobs
 from folktables import ACSDataSource, ACSTravelTime
 import numpy as np
 
+d = {
+    "AGEP": "Age",
+    "SCHL": "Education",
+    "MAR": "Marital",
+    "ESP": "Employment",
+    "ST": "State",
+    "POVPIP": "PovertyIncome",
+    "MIG": "MobilityStat",
+    "CIT": "Citizenship",
+    "DIS": "Disability",
+    "OCCP": "Occupation",
+    "PUMA": "Area",
+    "JWTR": "WorkTravel",
+    "JWTRNS": "WorkTravel2",
+    "RAC1P": "Race",
+    "AGEP": "Age",
+    "POWPUMA": "WorkPlace",
+}
+
 
 class GetData:
     """
@@ -78,15 +97,18 @@ class GetData:
             except:
                 acs_data = data_source.get_data(states=["CA"], download=True)
             X, y, group = ACSTravelTime.df_to_numpy(acs_data)
-            X = pd.DataFrame(X, columns=ACSTravelTime.features)
+            X = pd.DataFrame(X, columns=ACSTravelTime.features).rename(columns=d)
             # Lets make smaller data for computational reasons
-            self.X = X.head(10_000)
+            self.X = X.rename(columns=d).head(10_000)
             self.y = y[:10_000]
             # OOD data
             acs_data = data_source.get_data(states=["NY"], download=True)
             X_ood, y_ood, group = ACSTravelTime.df_to_numpy(acs_data)
-            X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features)
-            self.X_ood = X_ood.head(20_000)
+            X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features).rename(
+                columns=d
+            )
+
+            self.X_ood = X_ood.rename(columns=d).head(20_000)
             self.y_ood = y_ood[:20_000]
         else:
             raise ValueError("type must be one of {}".format(self.supported_types))
@@ -101,7 +123,9 @@ class GetData:
         except:
             acs_data = data_source.get_data(states=[state], download=True)
         X_ood, y_ood, group = ACSTravelTime.df_to_numpy(acs_data)
-        X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features)
+        X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features).rename(
+            columns=d, inplace=True
+        )
         self.X_ood = X_ood.head(5_000)
         self.y_ood = y_ood[:5_000]
         return self.X_ood, self.y_ood
