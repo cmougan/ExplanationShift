@@ -33,7 +33,12 @@ X, y = X_cal_1, y_cal_1
 # %%
 detector = ExplanationShiftDetector(
     model=XGBClassifier(),
-    gmodel=Pipeline([("scaler", StandardScaler()), ("lr", LogisticRegression())]),
+    gmodel=Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("lr", LogisticRegression(penalty="l1", solver="liblinear")),
+        ]
+    ),
 )
 # %% Build AUC interval
 aucs = []
