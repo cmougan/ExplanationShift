@@ -122,10 +122,8 @@ class GetData:
             acs_data = data_source.get_data(states=[state], download=False)
         except:
             acs_data = data_source.get_data(states=[state], download=True)
-        X_ood, y_ood, group = ACSTravelTime.df_to_numpy(acs_data)
-        X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features).rename(
-            columns=d, inplace=True
-        )
+        X_ood, y_ood, _ = ACSTravelTime.df_to_numpy(acs_data)
+        X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features).rename(columns=d)
         self.X_ood = X_ood.head(5_000)
         self.y_ood = y_ood[:5_000]
         return self.X_ood, self.y_ood
