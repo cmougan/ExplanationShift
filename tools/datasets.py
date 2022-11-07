@@ -86,8 +86,8 @@ class GetData:
             acs_data = data_source.get_data(states=["NY"], download=True)
             X_ood, y_ood, group = ACSTravelTime.df_to_numpy(acs_data)
             X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features)
-            self.X_ood = X_ood.head(5_000)
-            self.y_ood = y_ood[:5_000]
+            self.X_ood = X_ood.head(10_000)
+            self.y_ood = y_ood[:10_000]
         else:
             raise ValueError("type must be one of {}".format(self.supported_types))
 

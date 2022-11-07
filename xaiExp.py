@@ -25,6 +25,9 @@ from tools.xaiUtils import ExplanationShiftDetector
 # %%
 data = GetData(type="real")
 X, y, X_ood, y_ood = data.get_data()
+# Hold out set for CA-14
+X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(X, y, test_size=0.2)
+X, y = X_cal_1, y_cal_1
 # %%
 detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegression())
 # %% Build AUC interval
@@ -39,7 +42,8 @@ for _ in tqdm(range(50)):
 ## OOD AUC
 ood_auc = []
 ood_coefs = []
-states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18", "CA18", "CA14"]
+# states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18", "CA18", "CA14"]
+states = ["NY18", "TX18", "HI18", "CA18"]
 
 for state in states:
     X_ood, _ = data.get_state(state=state[:2], year="20" + state[2:])
@@ -51,15 +55,17 @@ for state in states:
 plt.figure(figsize=(10, 6))
 plt.title("AUC OOD performance of the Explanation Shift detector")
 sns.kdeplot(aucs, fill=True, label="In-Distribution (CA14)")
+plt.axvline(ood_auc[0], label="CA-14 (Hold Out)")
 plt.axvline(ood_auc[0], label=states[0], color="#00BFFF")
 plt.axvline(ood_auc[1], label=states[1], color="#C68E17")
 plt.axvline(ood_auc[2], label=states[2], color="#7DFDFE")
 plt.axvline(ood_auc[3], label=states[3], color="#6F4E37")
-plt.axvline(ood_auc[4], label=states[4], color="#EB5406")
-plt.axvline(ood_auc[5], label=states[5], color="#8E7618")
-plt.axvline(ood_auc[6], label=states[6], color="r")
-plt.axvline(ood_auc[7], label=states[7])
+# plt.axvline(ood_auc[4], label=states[4], color="#EB5406")
+# plt.axvline(ood_auc[5], label=states[5], color="#8E7618")
+# plt.axvline(ood_auc[6], label=states[6], color="r")
+# plt.axvline(ood_auc[7], label=states[7])
 plt.legend()
+plt.tight_layout()
 plt.savefig("images/AUC_OOD.png")
 plt.show()
 # %%
@@ -90,6 +96,7 @@ coefs_res.sort_values(by="mean", ascending=True).shape
 plt.figure(figsize=(10, 6))
 plt.title("Feature importance of the Explanation Shift detector (p-values)")
 sns.heatmap(coefs_res.sort_values(by="mean", ascending=True), annot=True)
+plt.tight_layout()
 plt.savefig("images/feature_importance.png")
 plt.show()
 # %%
