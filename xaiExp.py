@@ -29,7 +29,7 @@ X, y, X_ood, y_ood = data.get_data()
 X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(X, y, test_size=0.2)
 X, y = X_cal_1, y_cal_1
 # %%
-detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegression())
+detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegression(penalty='l1',solver='liblinear'))
 # %% Build AUC interval
 aucs = []
 cofs = []
