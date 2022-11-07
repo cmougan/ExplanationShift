@@ -33,7 +33,7 @@ detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegres
 # %% Build AUC interval
 aucs = []
 cofs = []
-for _ in tqdm(range(50)):
+for _ in tqdm(range(100)):
     X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.5)
     detector.fit(X_tr, y_tr, X_te)
     aucs.append(detector.get_auc_val())
@@ -51,15 +51,21 @@ for state in states:
     ood_auc.append(detector.get_auc_val())
     ood_coefs.append(detector.get_coefs())
 # %%
+# Lets add the CA-14 indistribution hold out set
+detector.fit(X, y, X_cal_2)
+ood_auc.append(detector.get_auc_val())
+ood_coefs.append(detector.get_coefs())
+states = states + ["CA14"]
+# %%
 # Plot AUC
 plt.figure(figsize=(10, 6))
 plt.title("AUC OOD performance of the Explanation Shift detector")
 sns.kdeplot(aucs, fill=True, label="In-Distribution (CA14)")
-plt.axvline(ood_auc[0], label="CA-14 (Hold Out)")
 plt.axvline(ood_auc[0], label=states[0], color="#00BFFF")
 plt.axvline(ood_auc[1], label=states[1], color="#C68E17")
 plt.axvline(ood_auc[2], label=states[2], color="#7DFDFE")
 plt.axvline(ood_auc[3], label=states[3], color="#6F4E37")
+plt.axvline(ood_auc[4], label="CA-14 (Hold Out)")
 # plt.axvline(ood_auc[4], label=states[4], color="#EB5406")
 # plt.axvline(ood_auc[5], label=states[5], color="#8E7618")
 # plt.axvline(ood_auc[6], label=states[6], color="r")
