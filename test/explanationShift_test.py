@@ -82,12 +82,38 @@ def test_no_nan():
     assert not np.any(np.isnan(ex))
 
 
-def test_get_coefs():
+def test_get_coefs_linear():
     """
-    Check that the coefficients are returned correctly.
+    Check that the coefficients are returned correctly for the linear regression.
     """
     esd = ExplanationShiftDetector(
         model=LinearRegression(), gmodel=LogisticRegression()
+    )
+    esd.fit(X, y, X_ood)
+    coefs = esd.get_linear_coefs()
+    # Assert shape
+    assert coefs.shape[1] == X.shape[1]
+    # Assert that there is non NaNs
+    assert not np.any(np.isnan(coefs))
+    # Check when we call the full methods
+    coefs = esd.get_coefs()
+    # Assert shape
+    assert coefs.shape[1] == X.shape[1]
+    # Assert that there is non NaNs
+    assert not np.any(np.isnan(coefs))
+
+
+def test_get_coefs_pipeline():
+    """
+    Check that the coefficients are returned correctly for the linear regression pipeline.
+    TODO : add a test for the case of a pipeline for F.
+    """
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    esd = ExplanationShiftDetector(
+        model=LinearRegression(),
+        gmodel=Pipeline([("scaler", StandardScaler()), ("lr", LogisticRegression())]),
     )
     esd.fit(X, y, X_ood)
     coefs = esd.get_coefs()
@@ -95,3 +121,22 @@ def test_get_coefs():
     assert coefs.shape[1] == X.shape[1]
     # Assert that there is non NaNs
     assert not np.any(np.isnan(coefs))
+
+
+def test_get_model_types():
+    """
+    Check that the model types are returned correctly.
+    """
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+
+    esd = ExplanationShiftDetector(
+        model=LinearRegression(), gmodel=LogisticRegression()
+    )
+    assert esd.get_gmodel_type(), esd.get_model_type() == ("linear", "linear")
+    # Case of pipeline
+    esd = ExplanationShiftDetector(
+        model=Pipeline([("scaler", StandardScaler()), ("lr", LinearRegression())]),
+        gmodel=Pipeline([("scaler", StandardScaler()), ("lr", LogisticRegression())]),
+    )
+    assert esd.get_gmodel_type(), esd.get_model_type() == ("linear", "linear")

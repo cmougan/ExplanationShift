@@ -12,6 +12,8 @@ random.seed(0)
 # Scikit Learn
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from tools.xaiUtils import ExplanationShiftDetector
 import seaborn as sns
 
@@ -29,7 +31,10 @@ X, y, X_ood, y_ood = data.get_data()
 X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(X, y, test_size=0.2)
 X, y = X_cal_1, y_cal_1
 # %%
-detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegression(penalty='l1',solver='liblinear'))
+detector = ExplanationShiftDetector(
+    model=XGBClassifier(),
+    gmodel=Pipeline([("scaler", StandardScaler()), ("lr", LogisticRegression())]),
+)
 # %% Build AUC interval
 aucs = []
 cofs = []
@@ -105,4 +110,3 @@ sns.heatmap(coefs_res.sort_values(by="mean", ascending=True), annot=True)
 plt.tight_layout()
 plt.savefig("images/feature_importance.png")
 plt.show()
-# %%
