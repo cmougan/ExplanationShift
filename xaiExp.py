@@ -72,6 +72,7 @@ states = states + ["CA14"]
 # Plot AUC
 plt.figure(figsize=(10, 6))
 plt.title("AUC OOD performance of the Explanation Shift detector")
+plt.ylabel("AUC")
 sns.kdeplot(aucs, fill=True, label="In-Distribution (CA14)")
 plt.axvline(ood_auc[0], label=states[0], color="#00BFFF")
 plt.axvline(ood_auc[1], label=states[1], color="#C68E17")
