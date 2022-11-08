@@ -31,8 +31,9 @@ class GetData:
     X, y, X_ood, y_ood = data.get_data()
     """
 
-    def __init__(self, type: str = "blobs"):
+    def __init__(self, type: str = "blobs", N: int = 100000):
         self.type = type
+        self.N = N
         self.X = None
         self.y = None
         self.X_tr = None
@@ -51,7 +52,7 @@ class GetData:
             )
             self.X = pd.DataFrame(self.X, columns=["x1", "x2", "x3", "x4", "x5"])
             self.X_ood, self.y_ood = make_blobs(
-                n_samples=1000, centers=1, n_features=5, random_state=0
+                n_samples=self.N, centers=1, n_features=5, random_state=0
             )
             self.X_ood = pd.DataFrame(
                 self.X_ood, columns=["x1", "x2", "x3", "x4", "x5"]
@@ -98,18 +99,22 @@ class GetData:
                 acs_data = data_source.get_data(states=["CA"], download=True)
             X, y, group = ACSTravelTime.df_to_numpy(acs_data)
             X = pd.DataFrame(X, columns=ACSTravelTime.features).rename(columns=d)
-            # Lets make smaller data for computational reasons
-            self.X = X.rename(columns=d).head(10_000)
-            self.y = y[:10_000]
+
             # OOD data
             acs_data = data_source.get_data(states=["NY"], download=True)
             X_ood, y_ood, group = ACSTravelTime.df_to_numpy(acs_data)
             X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features).rename(
                 columns=d
             )
+            self.X = X.rename(columns=d)
+            self.X_ood = X_ood.rename(columns=d)
+            # Lets make smaller data for computational reasons
+            self.X = X.head(self.N)
+            self.y = y[: self.N]
 
-            self.X_ood = X_ood.rename(columns=d).head(20_000)
-            self.y_ood = y_ood[:20_000]
+            self.X_ood = X_ood.head(self.N)
+            self.y_ood = y_ood[: self.N]
+
         else:
             raise ValueError("type must be one of {}".format(self.supported_types))
 
@@ -124,6 +129,6 @@ class GetData:
             acs_data = data_source.get_data(states=[state], download=True)
         X_ood, y_ood, _ = ACSTravelTime.df_to_numpy(acs_data)
         X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features).rename(columns=d)
-        self.X_ood = X_ood.head(5_000)
-        self.y_ood = y_ood[:5_000]
+        self.X_ood = X_ood.head(self.N)
+        self.y_ood = y_ood[: self.N]
         return self.X_ood, self.y_ood

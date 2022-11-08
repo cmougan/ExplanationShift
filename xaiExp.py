@@ -28,7 +28,9 @@ from tools.xaiUtils import ExplanationShiftDetector
 data = GetData(type="real")
 X, y, X_ood, y_ood = data.get_data()
 # Hold out set for CA-14
-X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(X, y, test_size=0.2)
+X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
+    X, y, test_size=0.5, stratify=y, random_state=0
+)
 X, y = X_cal_1, y_cal_1
 # %%
 detector = ExplanationShiftDetector(
@@ -95,13 +97,12 @@ plt.show()
 # print("For a random in-distribution sample, we get a low p-value {:.2f}".format(np.mean(aucs > aucs[5])))
 # print("See, for each distribution sample, if we would reject with alpha = 0.05",np.mean((aucs >= lower) * (aucs <= upper)),)
 # print("{} of the times we wouldnt reject with alpha = 0.05".format(np.mean((aucs >= lower) * (aucs <= upper))))
-
 # %%
 # Analysis of coeficients
 coefs = pd.DataFrame(cofs, columns=X.columns)
 coefs_res = pd.DataFrame(index=coefs.columns)
 for i in range(len(ood_coefs)):
-    coefs_res[states[i]] = np.mean(coefs < ood_coefs[i])
+    coefs_res[states[i]] = np.mean(coefs <= ood_coefs[i])
 
 # %%
 coefs_res["mean"] = coefs_res.mean(axis=1)
