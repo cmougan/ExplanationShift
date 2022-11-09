@@ -1,7 +1,6 @@
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.model_selection import train_test_split
-from sklearn.utils.validation import check_is_fitted
 from sklearn.metrics import roc_auc_score
 import pandas as pd
 import shap
