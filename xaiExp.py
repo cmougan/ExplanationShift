@@ -125,10 +125,10 @@ from matplotlib.colors import LogNorm
 plt.figure(figsize=(10, 6))
 plt.title("Feature importance of the Explanation Shift detector (Wasserstein)")
 sns.heatmap(
-    coefs_res.sort_values(by="mean", ascending=False), annot=True, norm=LogNorm()
+    coefs_res.sort_values(by="mean", ascending=False).drop("State", axis=0),
+    annot=True,
+    norm=LogNorm(),
 )
 plt.tight_layout()
 plt.savefig("images/feature_importance.png")
 plt.show()
-
-# %%
