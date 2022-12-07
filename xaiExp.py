@@ -88,7 +88,7 @@ colors = ["#00BFFF", "#C68E17", "#7DFDFE", "#6F4E37", "#EB5406", "#8E7618", "r",
 for i, state in enumerate(states):
     # plt.axvline(np.mean(ood_auc[state]), label=state, color=colors[i])
     sns.kdeplot(ood_auc[state], label=state, color=colors[i], fill=True)
-# plt.axvline(hold_auc, label="CA-14 (Hold Out)")
+plt.axvline(hold_auc, label="CA-14 (Hold Out)")
 plt.legend()
 plt.tight_layout()
 plt.savefig("images/AUC_OOD.png")
