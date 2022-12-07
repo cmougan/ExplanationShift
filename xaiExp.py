@@ -6,6 +6,7 @@ plt.rcParams.update({"font.size": 14})
 import seaborn as sns
 import pandas as pd
 import random
+from scipy.stats import wasserstein_distance
 from tqdm import tqdm
 
 random.seed(0)
@@ -45,44 +46,49 @@ detector = ExplanationShiftDetector(
 # %% Build AUC interval
 aucs = []
 cofs = []
-for _ in tqdm(range(100)):
-    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.5)
+for i in tqdm(range(100)):
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        X, y, test_size=0.5, stratify=y, random_state=i
+    )
     detector.fit(X_tr, y_tr, X_te)
     aucs.append(detector.get_auc_val())
     cofs.append(detector.get_coefs()[0])
 # %%
 ## OOD AUC
-ood_auc = []
-ood_coefs = []
+ood_auc = {}
+ood_coefs = {}
 # states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18", "CA18", "CA14"]
 states = ["NY18", "TX18", "HI18", "CA18"]
+for state in tqdm(states):
+    X_ood_, _ = data.get_state(state=state[:2], year="20" + state[2:])
+    ood_temp = []
+    ood_coefs_temp = pd.DataFrame(columns=X.columns)
+    for i in range(100):
+        X_ood = X_ood_.sample(frac=0.632, replace=True)
+        detector.fit(X, y, X_ood)
+        ood_temp.append(detector.get_auc_val())
+        ood_coefs_temp = ood_coefs_temp.append(
+            pd.DataFrame(detector.get_coefs(), columns=X.columns)
+        )
+    ood_auc[state] = ood_temp
+    ood_coefs[state] = ood_coefs_temp
 
-for state in states:
-    X_ood, _ = data.get_state(state=state[:2], year="20" + state[2:])
-    detector.fit(X, y, X_ood)
-    ood_auc.append(detector.get_auc_val())
-    ood_coefs.append(detector.get_coefs())
 # %%
 # Lets add the CA-14 indistribution hold out set
 detector.fit(X, y, X_cal_2)
-ood_auc.append(detector.get_auc_val())
-ood_coefs.append(detector.get_coefs())
-states = states + ["CA14"]
+hold_auc = detector.get_auc_val()
+hold_coefs = detector.get_coefs()
 # %%
 # Plot AUC
 plt.figure(figsize=(10, 6))
 plt.title("AUC OOD performance of the Explanation Shift detector")
 plt.ylabel("AUC")
 sns.kdeplot(aucs, fill=True, label="In-Distribution (CA14)")
-plt.axvline(ood_auc[0], label=states[0], color="#00BFFF")
-plt.axvline(ood_auc[1], label=states[1], color="#C68E17")
-plt.axvline(ood_auc[2], label=states[2], color="#7DFDFE")
-plt.axvline(ood_auc[3], label=states[3], color="#6F4E37")
-plt.axvline(ood_auc[4], label="CA-14 (Hold Out)")
-# plt.axvline(ood_auc[4], label=states[4], color="#EB5406")
-# plt.axvline(ood_auc[5], label=states[5], color="#8E7618")
-# plt.axvline(ood_auc[6], label=states[6], color="r")
-# plt.axvline(ood_auc[7], label=states[7])
+colors = ["#00BFFF", "#C68E17", "#7DFDFE", "#6F4E37", "#EB5406", "#8E7618", "r", "g"]
+for i, state in enumerate(states):
+    # plt.axvline(np.mean(ood_auc[state]), label=state, color=colors[i])
+    sns.kdeplot(ood_auc[state], label=state, color=colors[i], fill=True)
+# plt.axvline(hold_auc, label="CA-14 (Hold Out)")
 plt.legend()
 plt.tight_layout()
 plt.savefig("images/AUC_OOD.png")
@@ -102,18 +108,27 @@ plt.show()
 # Analysis of coeficients
 coefs = pd.DataFrame(cofs, columns=X.columns)
 coefs_res = pd.DataFrame(index=coefs.columns)
-for i in range(len(ood_coefs)):
-    coefs_res[states[i]] = np.mean(coefs <= ood_coefs[i])
+# %%
+# Strength of the feature importance
+for i, state in enumerate(states):
+    for col in coefs.columns:
+        coefs_res.loc[col, state] = wasserstein_distance(
+            ood_coefs[state][col], coefs[col]
+        )
 
 # %%
 coefs_res["mean"] = coefs_res.mean(axis=1)
 coefs_res.sort_values(by="mean", ascending=True)
 # %%
-coefs_res.sort_values(by="mean", ascending=True).shape
-# %%
+from matplotlib.colors import LogNorm
+
 plt.figure(figsize=(10, 6))
-plt.title("Feature importance of the Explanation Shift detector (p-values)")
-sns.heatmap(coefs_res.sort_values(by="mean", ascending=True), annot=True)
+plt.title("Feature importance of the Explanation Shift detector (Wasserstein)")
+sns.heatmap(
+    coefs_res.sort_values(by="mean", ascending=False), annot=True, norm=LogNorm()
+)
 plt.tight_layout()
 plt.savefig("images/feature_importance.png")
 plt.show()
+
+# %%
