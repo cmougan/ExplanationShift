@@ -25,6 +25,7 @@ from sklearn.ensemble import (
 )
 
 plt.style.use("seaborn-whitegrid")
+plt.rcParams.update({"font.size": 14})
 from xgboost import XGBRegressor, XGBClassifier
 import shap
 from alibi_detect.cd import ChiSquareDrift, TabularDrift, ClassifierDrift
@@ -110,12 +111,12 @@ results = pd.DataFrame(
     columns=["rho", "input_ks", "classifierDrift", "output_ks", "wass", "unc", "esd"],
 )
 # %%
-plt.figure(figsize=(10, 10))
+plt.figure()
+plt.plot(results["rho"], results["esd"], label="Explanation Shift")
 plt.plot(results["rho"], results["input_ks"], label="Input KS")
 plt.plot(results["rho"], results["classifierDrift"], label="Classifier Drift")
 plt.plot(results["rho"], results["output_ks"], label="Output KS")
 plt.plot(results["rho"], results["unc"], label="Uncertainty by CP")
-plt.plot(results["rho"], results["esd"], label="Explanation Shift")
 plt.plot(results["rho"], results["wass"], label="Wasserstein Ouput")
 plt.legend()
 plt.xlabel("Correlation")

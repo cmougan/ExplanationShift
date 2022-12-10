@@ -19,13 +19,14 @@ from sklearn.linear_model import LogisticRegression, Lasso, LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 
 plt.style.use("seaborn-whitegrid")
+plt.rcParams.update({"font.size": 14})
 from xgboost import XGBRegressor, XGBClassifier
 import shap
 
 import sys
 
 sys.path.append("../")
-from fairtools.xaiUtils import ShapEstimator
+from tools.xaiUtils import ShapEstimator
 
 # %%
 ## Sensitivity experiment
