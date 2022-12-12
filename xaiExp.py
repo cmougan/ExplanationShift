@@ -58,7 +58,7 @@ for i in tqdm(range(100)):
 ood_auc = {}
 ood_coefs = {}
 # states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18", "CA18", "CA14"]
-states = ["NY18", "TX18", "HI18", "CA18"]
+states = ["NY18", "TX18", "HI18", "MI18", "PR18", "CA18"]
 for state in tqdm(states):
     X_ood_, _ = data.get_state(state=state[:2], year="20" + state[2:])
     ood_temp = []
@@ -88,7 +88,7 @@ colors = ["#00BFFF", "#C68E17", "#7DFDFE", "#6F4E37", "#EB5406", "#8E7618", "r",
 for i, state in enumerate(states):
     # plt.axvline(np.mean(ood_auc[state]), label=state, color=colors[i])
     sns.kdeplot(ood_auc[state], label=state, color=colors[i], fill=True)
-plt.axvline(hold_auc, label="CA-14 (Hold Out)")
+# plt.axvline(hold_auc, label="CA-14 (Hold Out)")
 plt.legend()
 plt.tight_layout()
 plt.savefig("images/AUC_OOD.png")
