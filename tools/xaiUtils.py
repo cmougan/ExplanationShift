@@ -77,10 +77,11 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
     # 0.5
     """
 
-    def __init__(self, model, gmodel):
+    def __init__(self, model, gmodel, space: str = "explanation"):
         self.model = model
         self.gmodel = gmodel
         self.explainer = None
+        self.space = space
 
         # Supported F Models
         self.supported_tree_models = ["XGBClassifier", "XGBRegressor"]
@@ -113,6 +114,13 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
             raise ValueError(
                 "gmodel not supported. Supported models are: {} got {}".format(
                     self.supported_detectors, self.gmodel.__class__.__name__
+                )
+            )
+        # Check if space is supported
+        if self.space not in ["explanation", "input", "prediction"]:
+            raise ValueError(
+                "space not supported. Supported spaces are: {} got {}".format(
+                    ["explanation", "input", "prediction"], self.space
                 )
             )
 
@@ -182,31 +190,55 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         self.gmodel.fit(X, y)
 
     def get_explanations(self, X):
-        # Determine the type of SHAP explainer to use
-        if self.get_model_type() in self.supported_tree_models:
-            self.explainer = shap.Explainer(self.model)
-        elif self.get_model_type() in self.supported_linear_models:
-            self.explainer = shap.LinearExplainer(
-                self.model, X, feature_dependence="correlation_dependent"
-            )
-        else:
-            raise ValueError(
-                "Model not supported. Supported models are: {}, got {}".format(
-                    self.supported_models, self.model.__class__.__name__
+        if self.space == "explanation":
+            # Determine the type of SHAP explainer to use
+            if self.get_model_type() in self.supported_tree_models:
+                self.explainer = shap.Explainer(self.model)
+            elif self.get_model_type() in self.supported_linear_models:
+                self.explainer = shap.LinearExplainer(
+                    self.model, X, feature_dependence="correlation_dependent"
                 )
+            else:
+                raise ValueError(
+                    "Model not supported. Supported models are: {}, got {}".format(
+                        self.supported_models, self.model.__class__.__name__
+                    )
+                )
+
+            shap_values = self.explainer(X)
+            # Name columns
+            if isinstance(X, pd.DataFrame):
+                columns_name = X.columns
+            else:
+                columns_name = ["Shap%d" % (i + 1) for i in range(X.shape[1])]
+
+            exp = pd.DataFrame(
+                data=shap_values.values,
+                columns=columns_name,
             )
+        if self.space == "input":
+            shap_values = X
+            # Name columns
+            if isinstance(X, pd.DataFrame):
+                exp = X
+            else:
+                columns_name = ["Shap%d" % (i + 1) for i in range(X.shape[1])]
 
-        shap_values = self.explainer(X)
-        # Name columns
-        if isinstance(X, pd.DataFrame):
-            columns_name = X.columns
-        else:
-            columns_name = ["Shap%d" % (i + 1) for i in range(X.shape[1])]
+                exp = pd.DataFrame(
+                    data=shap_values,
+                    columns=columns_name,
+                )
+        if self.space == "prediction":
+            shap_values = self.model.predict_proba(X)[:, 1]
+            # Name columns
+            if isinstance(X, pd.DataFrame):
+                exp = shap_values
+            else:
+                exp = pd.DataFrame(
+                    data=shap_values,
+                    columns=["preds"],
+                )
 
-        exp = pd.DataFrame(
-            data=shap_values.values,
-            columns=columns_name,
-        )
         return exp
 
     def get_auc_val(self):

@@ -115,7 +115,7 @@ def test_get_coefs_pipeline():
         model=LinearRegression(),
         gmodel=Pipeline([("scaler", StandardScaler()), ("lr", LogisticRegression())]),
     )
-    esd.fit(X, y, X_ood)
+    esd.fit(X_tr, y_tr, X_ood)
     coefs = esd.get_coefs()
     # Assert shape
     assert coefs.shape[1] == X.shape[1]
@@ -140,3 +140,35 @@ def test_get_model_types():
         gmodel=Pipeline([("scaler", StandardScaler()), ("lr", LogisticRegression())]),
     )
     assert esd.get_gmodel_type(), esd.get_model_type() == ("linear", "linear")
+
+
+def test_spaces():
+    """
+    Check that the spaces are returned correctly.
+    """
+    from pandas.testing import assert_frame_equal
+
+    esd = ExplanationShiftDetector(
+        model=LinearRegression(), gmodel=LogisticRegression(), space="input"
+    )
+    esd.fit(X_tr, y_tr, X_ood)
+    # Check if returns input space
+    # assert esd.get_explanations(X) == X
+    np.testing.assert_array_equal(esd.get_explanations(X), X)
+    # Check if returns output space
+    esd = ExplanationShiftDetector(
+        model=LogisticRegression(), gmodel=LogisticRegression(), space="prediction"
+    )
+    esd.fit(X, y, X_ood)
+    np.testing.assert_array_equal(
+        esd.get_explanations(X),
+        pd.DataFrame(data=esd.model.predict_proba(X)[:, 1], columns=["preds"]),
+    )
+
+    # Check if returns exp space
+    esd = ExplanationShiftDetector(
+        model=LinearRegression(), gmodel=LogisticRegression(), space="explanation"
+    )
+    esd.fit(X, y, X_ood)
+
+    np.testing.assert_array_equal(esd.get_explanations(X).shape, X.shape)
