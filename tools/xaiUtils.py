@@ -232,9 +232,9 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
             shap_values = self.model.predict_proba(X)[:, 1]
             # Name columns
             exp = pd.DataFrame(
-                    data=shap_values,
-                    columns=["preds"],
-                )
+                data=shap_values,
+                columns=["preds"],
+            )
 
         return exp
 
