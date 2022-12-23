@@ -231,10 +231,7 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         if self.space == "prediction":
             shap_values = self.model.predict_proba(X)[:, 1]
             # Name columns
-            if isinstance(X, pd.DataFrame):
-                exp = shap_values
-            else:
-                exp = pd.DataFrame(
+            exp = pd.DataFrame(
                     data=shap_values,
                     columns=["preds"],
                 )
