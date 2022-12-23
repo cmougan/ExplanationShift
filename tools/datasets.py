@@ -1,6 +1,13 @@
 import pandas as pd
 from sklearn.datasets import make_blobs
-from folktables import ACSDataSource, ACSTravelTime
+from folktables import (
+    ACSDataSource,
+    ACSTravelTime,
+    ACSEmployment,
+    ACSIncome,
+    ACSMobility,
+    ACSPublicCoverage,
+)
 import numpy as np
 
 d = {
@@ -31,7 +38,7 @@ class GetData:
     X, y, X_ood, y_ood = data.get_data()
     """
 
-    def __init__(self, type: str = "blobs", N: int = 100000):
+    def __init__(self, type: str = "blobs", N: int = 100000, datasets="ACSTravelTime"):
         self.type = type
         self.N = N
         self.X = None
@@ -42,8 +49,20 @@ class GetData:
         self.y_te = None
         self.X_ood = None
         self.y_ood = None
+
         self.supported_types = ["blobs", "synthetic", "real"]
         assert self.type in self.supported_types
+
+        if datasets == "ACSTravelTime":
+            self.dataset = ACSTravelTime
+        elif datasets == "ACSEmployment":
+            self.dataset = ACSEmployment
+        elif datasets == "ACSIncome":
+            self.dataset = ACSIncome
+        elif datasets == "ACSMobility":
+            self.dataset = ACSMobility
+        elif datasets == "ACSPublicCoverage":
+            self.dataset = ACSPublicCoverage
 
     def get_data(self):
         if self.type == "blobs":
@@ -93,19 +112,18 @@ class GetData:
             data_source = ACSDataSource(
                 survey_year="2014", horizon="1-Year", survey="person"
             )
+
             try:
                 acs_data = data_source.get_data(states=["CA"], download=False)
             except:
                 acs_data = data_source.get_data(states=["CA"], download=True)
-            X, y, group = ACSTravelTime.df_to_numpy(acs_data)
-            X = pd.DataFrame(X, columns=ACSTravelTime.features).rename(columns=d)
+            X, y, group = self.dataset.df_to_numpy(acs_data)
+            X = pd.DataFrame(X, columns=self.dataset.features).rename(columns=d)
 
             # OOD data
             acs_data = data_source.get_data(states=["NY"], download=True)
-            X_ood, y_ood, group = ACSTravelTime.df_to_numpy(acs_data)
-            X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features).rename(
-                columns=d
-            )
+            X_ood, y_ood, group = self.dataset.df_to_numpy(acs_data)
+            X_ood = pd.DataFrame(X_ood, columns=self.dataset.features).rename(columns=d)
             self.X = X.rename(columns=d)
             self.X_ood = X_ood.rename(columns=d)
             # Lets make smaller data for computational reasons
@@ -127,8 +145,8 @@ class GetData:
             acs_data = data_source.get_data(states=[state], download=False)
         except:
             acs_data = data_source.get_data(states=[state], download=True)
-        X_ood, y_ood, _ = ACSTravelTime.df_to_numpy(acs_data)
-        X_ood = pd.DataFrame(X_ood, columns=ACSTravelTime.features).rename(columns=d)
+        X_ood, y_ood, _ = self.dataset.df_to_numpy(acs_data)
+        X_ood = pd.DataFrame(X_ood, columns=self.dataset.features).rename(columns=d)
         self.X_ood = X_ood.head(self.N)
         self.y_ood = y_ood[: self.N]
         return self.X_ood, self.y_ood
