@@ -154,8 +154,8 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         self.S_ood = self.get_explanations(self.X_ood)
 
         # Create dataset for  explanation shift detector
-        self.S_val["label"] = 1
-        self.S_ood["label"] = 0
+        self.S_val["label"] = 0
+        self.S_ood["label"] = 1
 
         self.S = pd.concat([self.S_val, self.S_ood])
 
