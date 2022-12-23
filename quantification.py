@@ -48,19 +48,28 @@ detector = ExplanationShiftDetector(
 states = ["NY18", "TX18", "HI18", "MI18", "PR18", "CA18"]
 for state in tqdm(states):
     X_ood, y_ood = data.get_state(state=state[:2], year="20" + state[2:])
+    X_ood, X_ood_te, y_ood, y_ood_te = train_test_split(
+        X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=0
+    )
     break
 # %% Build detector
 detector.fit(X, y, X_ood)
-auc = detector.get_auc_val()
-cof = detector.get_coefs()[0]
+# Performance of model on X_train hold out
+auc_tr = roc_auc_score(y_cal_2, detector.model.predict_proba(X_cal_2)[:, 1])
 # %%
-preds = detector.predict_proba(X_ood)
+# Performance of detector on X_ood hold out
+preds = detector.predict_proba(X_ood_te)
 # %%
-X_ood_ = X_ood.copy()
-X_ood_["pred"] = preds[:, 1]
-X_ood_["y"] = y_ood
+X_ood_te["pred"] = preds[:, 1]
+X_ood_te["y"] = y_ood_te
 # %%
-X_ood_ = X_ood_.sort_values("pred", ascending=False)
+X_ood_te = X_ood_te.sort_values("pred", ascending=True)
+
+N = 1000
+auc_ood = roc_auc_score(
+    X_ood_te.head(N).y,
+    detector.model.predict_proba(X_ood_te.head(N).drop(columns=["y", "pred"]))[:, 1],
+)
 # %%
-roc_auc_score(X_ood_.head(1000).y, X_ood_.head(1000).pred)
+auc_tr - auc_ood
 # %%
