@@ -77,28 +77,43 @@ for datatype in tqdm(
             X_ood_te_ = X_ood_te.copy()
             X_ood_te_["pred"] = preds[:, 1]
             X_ood_te_["y"] = y_ood_te
-            X_ood_te_ = X_ood_te_.sort_values("pred", ascending=False)
-            N = 2_000
-            auc_ood = roc_auc_score(
-                X_ood_te_.head(N).y,
-                detector.model.predict_proba(
-                    X_ood_te_.head(N).drop(columns=["y", "pred"])
-                )[:, 1],
-            )
-            res.append([datatype, space, state, auc_tr - auc_ood])
-
-    results = pd.DataFrame(res, columns=["dataset", "space", "state", "auc_diff"])
+            for sort in [True, False]:
+                X_ood_te_ = X_ood_te_.sort_values("pred", ascending=sort)
+                N = 10_000
+                for N in [20_000, 10_000, 5_000, 1_000]:
+                    try:
+                        auc_ood = roc_auc_score(
+                            X_ood_te_.head(N).y,
+                            detector.model.predict_proba(
+                                X_ood_te_.head(N).drop(columns=["y", "pred"])
+                            )[:, 1],
+                        )
+                    except:
+                        auc_ood = 0.5
+                    res.append([datatype, sort, N, space, state, auc_tr - auc_ood])
+# %%
+results = pd.DataFrame(
+    res, columns=["dataset", "sort", "N", "space", "state", "auc_diff"]
+)
+# results = results[results["N"] == 10_000]
+# results1 = results[results['sort']==True]
+# False is bigger AUC gap is better
+# results2 = results[results['sort']==False]
 # %%
 # Convert results to table with State vs Space
-results = results.pivot(index=["state", "dataset"], columns="space", values="auc_diff")
-# Highlight the column with the max value
-results.style.apply(
-    lambda x: ["background-color: lightgreen" if v == x.max() else "" for v in x],
-    axis=1,
-)
+results = results.pivot(
+    index=["state", "dataset", "N", "sort"], columns="space", values="auc_diff"
+).reset_index()
+
 # %%
-results.groupby("dataset").mean().style.apply(
-    lambda x: ["background-color: lightgreen" if v == x.max() else "" for v in x],
-    axis=1,
-)
+# Lower is better
+results[results["sort"] == True].groupby(["dataset"]).mean().reset_index().drop(
+    columns=["sort", "N"]
+).round(3)
+# %%
+# Higher is better
+results[results["sort"] == False].groupby(["dataset"]).mean().reset_index().drop(
+    columns=["sort", "N"]
+).round(3)
+
 # %%
