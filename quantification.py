@@ -14,8 +14,9 @@ random.seed(0)
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 from tools.xaiUtils import ExplanationShiftDetector
 import seaborn as sns
 
@@ -38,7 +39,7 @@ for datatype in tqdm(
     ]
 ):
     data = GetData(type="real", datasets=datatype)
-    X, y, _, _ = data.get_data()
+    X, y = data.get_state(state="HI", year="2014")
     # Hold out set for CA-14
     X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
         X, y, test_size=0.5, stratify=y, random_state=0
@@ -77,10 +78,10 @@ for datatype in tqdm(
             X_ood_te_ = X_ood_te.copy()
             X_ood_te_["pred"] = preds[:, 1]
             X_ood_te_["y"] = y_ood_te
+
             for sort in [True, False]:
                 X_ood_te_ = X_ood_te_.sort_values("pred", ascending=sort)
-                N = 10_000
-                for N in [20_000, 10_000, 5_000, 1_000]:
+                for N in [20_000, 10_000, 5_000, 1_000, 100]:
                     try:
                         auc_ood = roc_auc_score(
                             X_ood_te_.head(N).y,
@@ -88,32 +89,63 @@ for datatype in tqdm(
                                 X_ood_te_.head(N).drop(columns=["y", "pred"])
                             )[:, 1],
                         )
-                    except:
-                        auc_ood = 0.5
+                    except Exception as e:
+                        print(e)
+                        print("Value Error", N, space, datatype, state)
+                        import pdb
+
+                        pdb.set_trace()
+                        auc_ood = 1
                     res.append([datatype, sort, N, space, state, auc_tr - auc_ood])
 # %%
-results = pd.DataFrame(
+results_ = pd.DataFrame(
     res, columns=["dataset", "sort", "N", "space", "state", "auc_diff"]
 )
-# results = results[results["N"] == 10_000]
+# results = results[results["N"] == 20_000]
 # results1 = results[results['sort']==True]
 # False is bigger AUC gap is better
 # results2 = results[results['sort']==False]
 # %%
 # Convert results to table with State vs Space
-results = results.pivot(
+results_ = results_.pivot(
     index=["state", "dataset", "N", "sort"], columns="space", values="auc_diff"
 ).reset_index()
+# %%
+results = results_[results_["N"] == 10_000]
+# %%
+# Closer to 0 is better Data, group by and aggregate mean and std
+results[results["sort"] == True].groupby(["dataset"]).agg(
+    ["mean", "std"]
+).reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
+)
+# %%
+# Closer to 0 is better State
+results[results["sort"] == True].groupby(
+    ["dataset", "state"]
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
+).to_excel(
+    "results/results_low.xlsx"
+)
 
 # %%
-# Lower is better
-results[results["sort"] == True].groupby(["dataset"]).mean().reset_index().drop(
-    columns=["sort", "N"]
-).round(3)
+results = results_[results_["N"] == 100]
 # %%
-# Higher is better
+# Higher is better highlight Data
 results[results["sort"] == False].groupby(["dataset"]).mean().reset_index().drop(
     columns=["sort", "N"]
-).round(3)
+).round(3).style.highlight_max(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
+)
+# %%
+# Higher is better highlight State
+results[results["sort"] == False].groupby(
+    ["dataset", "state"]
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_max(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
+).to_excel(
+    "results/results_hight.xlsx"
+)
 
 # %%
