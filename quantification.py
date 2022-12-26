@@ -123,11 +123,10 @@ results[results["sort"] == True].groupby(["dataset"]).agg(
 # Closer to 0 is better State
 results[results["sort"] == True].groupby(
     ["dataset", "state"]
-).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
-    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
-).to_excel(
-    "results/results_low.xlsx"
-)
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).to_csv(
+    "results/results_low.csv"
+)  # .style.highlight_min(color="lightgreen", axis=1, subset=["explanation", "input", "prediction"])
+
 
 # %%
 results = results_[results_["N"] == 100]
@@ -142,10 +141,8 @@ results[results["sort"] == False].groupby(["dataset"]).mean().reset_index().drop
 # Higher is better highlight State
 results[results["sort"] == False].groupby(
     ["dataset", "state"]
-).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_max(
-    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
-).to_excel(
-    "results/results_hight.xlsx"
-)
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).to_csv(
+    "results/results_high.csv"
+)  # .style.highlight_max(color="lightgreen", axis=1, subset=["explanation", "input", "prediction"])
 
 # %%
