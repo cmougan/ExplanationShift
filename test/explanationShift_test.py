@@ -21,37 +21,11 @@ def test_return_shapDF():
     XX = pd.DataFrame(X, columns=["a", "b", "c", "d", "e"])
 
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression()
+        model=LinearRegression(), gmodel=LogisticRegression(), masker=XX
     )
     esd.fit_model(XX, y)
     ex = esd.get_explanations(XX)
     assert all([a == b for a, b in zip(ex.columns, XX.columns)])
-
-
-def test_supported_models():
-    """
-    Check that models are supported.
-    """
-    for model in [XGBRegressor(), LogisticRegression()]:
-        for gmodel in [XGBClassifier(), LogisticRegression()]:
-            assert (
-                type(ExplanationShiftDetector(model=model, gmodel=gmodel))
-                is ExplanationShiftDetector
-            )
-
-
-def test_not_supported_models():
-    """
-    Check that models are not supported.
-    """
-
-    from sklearn.neural_network import MLPClassifier
-    import pytest
-
-    with pytest.raises(ValueError):
-        ExplanationShiftDetector(model=MLPClassifier(), gmodel=LogisticRegression())
-    with pytest.raises(ValueError):
-        ExplanationShiftDetector(model=LinearRegression(), gmodel=MLPClassifier())
 
 
 def test_doc_examples():
@@ -75,7 +49,7 @@ def test_no_nan():
     Check that no NaNs are present in the shap values.
     """
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression()
+        model=LinearRegression(), gmodel=LogisticRegression(), masker=X
     )
     esd.fit_model(X, y)
     ex = esd.get_explanations(X)
@@ -87,7 +61,7 @@ def test_get_coefs_linear():
     Check that the coefficients are returned correctly for the linear regression.
     """
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression()
+        model=LinearRegression(), gmodel=LogisticRegression(), masker=X
     )
     esd.fit(X, y, X_ood)
     coefs = esd.get_linear_coefs()
@@ -114,6 +88,7 @@ def test_get_coefs_pipeline():
     esd = ExplanationShiftDetector(
         model=LinearRegression(),
         gmodel=Pipeline([("scaler", StandardScaler()), ("lr", LogisticRegression())]),
+        masker=X,
     )
     esd.fit(X_tr, y_tr, X_ood)
     coefs = esd.get_coefs()
@@ -131,7 +106,7 @@ def test_get_model_types():
     from sklearn.preprocessing import StandardScaler
 
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression()
+        model=LinearRegression(), gmodel=LogisticRegression(), masker=X
     )
     assert esd.get_gmodel_type(), esd.get_model_type() == ("linear", "linear")
     # Case of pipeline
@@ -146,10 +121,12 @@ def test_spaces():
     """
     Check that the spaces are returned correctly.
     """
-    from pandas.testing import assert_frame_equal
 
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression(), space="input"
+        model=LinearRegression(),
+        gmodel=LogisticRegression(),
+        space="input",
+        masker=X_tr,
     )
     esd.fit(X_tr, y_tr, X_ood)
     # Check if returns input space
@@ -157,17 +134,24 @@ def test_spaces():
     np.testing.assert_array_equal(esd.get_explanations(X), X)
     # Check if returns output space
     esd = ExplanationShiftDetector(
-        model=LogisticRegression(), gmodel=LogisticRegression(), space="prediction"
+        model=LogisticRegression(),
+        gmodel=LogisticRegression(),
+        space="prediction",
+        masker=X,
     )
     esd.fit(X, y, X_ood)
     np.testing.assert_array_equal(
         esd.get_explanations(X),
-        pd.DataFrame(data=esd.model.predict_proba(X)[:, 1], columns=["preds"]),
+        # pd.DataFrame(data=esd.model.predict_proba(X)[:, 1], columns=["preds"]),
+        pd.DataFrame(data=esd.model.predict(X), columns=["preds"]),
     )
 
     # Check if returns exp space
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression(), space="explanation"
+        model=LinearRegression(),
+        gmodel=LogisticRegression(),
+        space="explanation",
+        masker=X,
     )
     esd.fit(X, y, X_ood)
 

@@ -33,45 +33,49 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
     # 0.5
     """
 
-    def __init__(self, model, gmodel, space: str = "explanation"):
+    def __init__(
+        self,
+        model,
+        gmodel,
+        space: str = "explanation",
+        algorithm: str = "auto",
+        masker=None,
+    ):
+        """
+        Parameters
+        ----------
+        model : sklearn model
+            Model to be used to compute the shap values.
+        gmodel : sklearn model
+            Model to be used to distinguish between the two datasets.
+        space : str, optional
+            Space in which the gmodel is learned. Can be 'explanation' or 'input' or 'predictions'. Default is 'explanation'.
+
+        algorithm : "auto", "permutation", "partition", "tree", or "linear"
+                The algorithm used to estimate the Shapley values. There are many different algorithms that
+                can be used to estimate the Shapley values (and the related value for constrained games), each
+                of these algorithms have various tradeoffs and are preferrable in different situations. By
+                default the "auto" options attempts to make the best choice given the passed model and masker,
+                but this choice can always be overriden by passing the name of a specific algorithm. The type of
+                algorithm used will determine what type of subclass object is returned by this constructor, and
+                you can also build those subclasses directly if you prefer or need more fine grained control over
+                their options.
+
+        masker : function or numpy.array or pandas.DataFrame or shap.common.Masker
+                The masker object is used to define the background distribution over which the Shapley values
+                are estimated. If a function is passed then it is used to mask the input data. If a numpy.array
+                or pandas.DataFrame is passed then it is used as the background dataset. If a Masker object is
+                passed then it is used directly. If None is passed then the default Masker is used which assumes
+                the input data is a dense numpy.array or pandas.DataFrame.
+        """
+
         self.model = model
         self.gmodel = gmodel
         self.explainer = None
         self.space = space
+        self.algorithm = algorithm
+        self.masker = masker
 
-        # Supported F Models
-        self.supported_tree_models = ["XGBClassifier", "XGBRegressor"]
-        self.supported_linear_models = [
-            "LogisticRegression",
-            "LinearRegression",
-            "Ridge",
-            "Lasso",
-        ]
-        self.supported_models = (
-            self.supported_tree_models + self.supported_linear_models
-        )
-        # Supported detectors
-        self.supported_linear_detectors = [
-            "LogisticRegression",
-        ]
-        self.supported_tree_detectors = ["XGBClassifier"]
-        self.supported_detectors = (
-            self.supported_linear_detectors + self.supported_tree_detectors
-        )
-
-        # Check if models are supported
-        if self.get_model_type() not in self.supported_models:
-            raise ValueError(
-                "Model not supported. Supported models are: {} got {}".format(
-                    self.supported_models, self.model.__class__.__name__
-                )
-            )
-        if self.get_gmodel_type() not in self.supported_detectors:
-            raise ValueError(
-                "gmodel not supported. Supported models are: {} got {}".format(
-                    self.supported_detectors, self.gmodel.__class__.__name__
-                )
-            )
         # Check if space is supported
         if self.space not in ["explanation", "input", "prediction"]:
             raise ValueError(
@@ -147,19 +151,10 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
 
     def get_explanations(self, X):
         if self.space == "explanation":
-            # Determine the type of SHAP explainer to use
-            if self.get_model_type() in self.supported_tree_models:
-                self.explainer = shap.Explainer(self.model)
-            elif self.get_model_type() in self.supported_linear_models:
-                self.explainer = shap.LinearExplainer(
-                    self.model, X, feature_dependence="correlation_dependent"
-                )
-            else:
-                raise ValueError(
-                    "Model not supported. Supported models are: {}, got {}".format(
-                        self.supported_models, self.model.__class__.__name__
-                    )
-                )
+
+            self.explainer = shap.Explainer(
+                self.model, algorithm=self.algorithm, masker=self.masker
+            )
 
             shap_values = self.explainer(X)
             # Name columns
@@ -224,27 +219,23 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
 
     def get_coefs(self):
         if self.gmodel.__class__.__name__ == "Pipeline":
-            if (
-                self.gmodel.steps[-1][1].__class__.__name__
-                in self.supported_linear_models
-            ):
+            if "sklearn.linear_model" in self.gmodel.steps[-1][1].__module__:
                 return self.gmodel.steps[-1][1].coef_
             else:
                 raise ValueError(
-                    "Pipeline model not supported. Supported models are: {}, got {}".format(
-                        self.supported_linear_models,
-                        self.gmodel.steps[-1][1].__class__.__name__,
+                    "Coefficients can not be calculated. Supported models are linear: sklearn.linear_model, got {}".format(
+                        self.gmodel.steps[-1][1].__module__
                     )
                 )
         else:
             return self.get_linear_coefs()
 
     def get_linear_coefs(self):
-        if self.gmodel.__class__.__name__ in self.supported_linear_models:
+        if "sklearn.linear_model" in self.gmodel.__module__:
             return self.gmodel.coef_
         else:
             raise ValueError(
-                "Detector model not supported. Supported models ar linear: {}, got {}".format(
-                    self.supported_linear_detector, self.model.__class__.__name__
+                "Coefficients can not be calculated. Supported models are linear: sklearn.linear_model, got {}".format(
+                    self.gmodel.steps[-1][1].__module__
                 )
             )
