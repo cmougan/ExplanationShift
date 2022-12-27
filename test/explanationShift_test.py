@@ -156,3 +156,28 @@ def test_spaces():
     esd.fit(X, y, X_ood)
 
     np.testing.assert_array_equal(esd.get_explanations(X).shape, X.shape)
+
+
+def test_tree_shap():
+    """
+    Check that the shap values are returned correctly for the tree models.
+    """
+    esd = ExplanationShiftDetector(
+        model=XGBRegressor(), gmodel=LogisticRegression(), masker=X
+    )
+    esd.fit(X, y, X_ood)
+    shap_values = esd.get_explanations(X)
+    # Assert shape
+    assert shap_values.shape[1] == X.shape[1]
+    # Assert that there is non NaNs
+    assert not np.any(np.isnan(shap_values))
+
+    esd = ExplanationShiftDetector(model=XGBRegressor(), gmodel=LogisticRegression())
+    esd.fit(X, y, X_ood)
+    shap_values2 = esd.get_explanations(X)
+    # Assert shape
+    assert shap_values2.shape[1] == X.shape[1]
+    # Assert that there is non NaNs
+    assert not np.any(np.isnan(shap_values2))
+    # Assert that the shap values are different depending on the masker
+    assert shap_values2.sum(axis=1).sum(axis=0) != shap_values.sum(axis=1).sum(axis=0)
