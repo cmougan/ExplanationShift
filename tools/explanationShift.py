@@ -39,7 +39,7 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         gmodel,
         space: str = "explanation",
         algorithm: str = "auto",
-        masker=None,
+        masker: bool = False,
     ):
         """
         Parameters
@@ -110,8 +110,8 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         self.fit_model(self.X_tr, self.y_tr)
 
         # Get explanations
-        self.S_val = self.get_explanations(self.X_val)
-        self.S_ood = self.get_explanations(self.X_ood)
+        self.S_val = self.get_explanations(self.X_val, masker=self.X_val)
+        self.S_ood = self.get_explanations(self.X_ood, masker=self.X_ood)
 
         # Create dataset for  explanation shift detector
         self.S_val["label"] = 0
@@ -135,7 +135,7 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         return self.gmodel.predict(self.get_explanations(X))
 
     def predict_proba(self, X):
-        return self.gmodel.predict_proba(self.get_explanations(X))
+        return self.gmodel.predict_proba(self.get_explanations(X, masker=X))
 
     def explanation_predict(self, X):
         return self.gmodel.predict(X)
@@ -149,12 +149,14 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
     def fit_explanation_shift(self, X, y):
         self.gmodel.fit(X, y)
 
-    def get_explanations(self, X):
+    def get_explanations(self, X, masker):
         if self.space == "explanation":
-
-            self.explainer = shap.Explainer(
-                self.model, algorithm=self.algorithm, masker=self.masker
-            )
+            if self.masker:
+                self.explainer = shap.Explainer(
+                    self.model, algorithm=self.algorithm, masker=masker
+                )
+            else:
+                self.explainer = shap.Explainer(self.model, algorithm=self.algorithm)
 
             shap_values = self.explainer(X)
             # Name columns
