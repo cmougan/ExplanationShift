@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from tools.xaiUtils import ExplanationShiftDetector
+from tools.explanationShift import ExplanationShiftDetector
 import seaborn as sns
 
 plt.style.use("seaborn-whitegrid")
@@ -23,7 +23,7 @@ from xgboost import XGBClassifier
 
 
 from tools.datasets import GetData
-from tools.xaiUtils import ExplanationShiftDetector
+from tools.explanationShift import ExplanationShiftDetector
 
 # %%
 data = GetData(type="real")

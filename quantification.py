@@ -17,14 +17,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from tools.xaiUtils import ExplanationShiftDetector
+from tools.explanationShift import ExplanationShiftDetector
 import seaborn as sns
 
 plt.style.use("seaborn-whitegrid")
 from xgboost import XGBClassifier
 
 from tools.datasets import GetData
-from tools.xaiUtils import ExplanationShiftDetector
+from tools.explanationShift import ExplanationShiftDetector
 
 # %%
 res = []

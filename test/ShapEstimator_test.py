@@ -1,4 +1,4 @@
-from tools.xaiUtils import ShapEstimator
+from tools.explanationShift import ShapEstimator
 
 
 def test_return_shape():

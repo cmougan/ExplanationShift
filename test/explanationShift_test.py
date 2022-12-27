@@ -1,4 +1,4 @@
-from tools.xaiUtils import ExplanationShiftDetector
+from tools.explanationShift import ExplanationShiftDetector
 
 
 from xgboost import XGBClassifier, XGBRegressor

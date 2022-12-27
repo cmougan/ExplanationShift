@@ -26,7 +26,7 @@ import shap
 import sys
 
 sys.path.append("../")
-from tools.xaiUtils import ShapEstimator
+from tools.explanationShift import ShapEstimator
 
 # %%
 ## Sensitivity experiment

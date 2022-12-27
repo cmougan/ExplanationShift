@@ -16,13 +16,13 @@ from sklearn.linear_model import LogisticRegression
 # Scikit Learn
 from sklearn.model_selection import train_test_split
 
-from tools.xaiUtils import ExplanationShiftDetector
+from tools.explanationShift import ExplanationShiftDetector
 
 plt.style.use("seaborn-whitegrid")
 from xgboost import XGBClassifier
 
 from tools.datasets import GetData
-from tools.xaiUtils import ExplanationShiftDetector
+from tools.explanationShift import ExplanationShiftDetector
 
 # %%
 data = GetData(type="real")
