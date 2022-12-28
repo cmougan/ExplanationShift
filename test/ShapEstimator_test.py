@@ -1,4 +1,4 @@
-from tools.explanationShift import ShapEstimator
+from tools.shapEstimator import ShapEstimator
 
 
 def test_return_shape():
