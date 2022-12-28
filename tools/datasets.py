@@ -138,7 +138,7 @@ class GetData:
 
         return self.X, self.y, self.X_ood, self.y_ood
 
-    def get_state(self, year: str = "2014", state: str = "NY",N:int=100000):
+    def get_state(self, year: str = "2014", state: str = "NY", N: int = 100000):
         self.N = N
         # OOD data
         data_source = ACSDataSource(survey_year=year, horizon="1-Year", survey="person")
