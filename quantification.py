@@ -22,6 +22,7 @@ import seaborn as sns
 
 plt.style.use("seaborn-whitegrid")
 from xgboost import XGBClassifier
+from catboost import CatBoostClassifier
 
 from tools.datasets import GetData
 from tools.explanationShift import ExplanationShiftDetector
@@ -55,7 +56,7 @@ for datatype in tqdm(
         # Build detector
         for space in ["explanation", "input", "prediction"]:
             detector = ExplanationShiftDetector(
-                model=XGBClassifier(),
+                model=CatBoostClassifier(iterations=200, verbose=False, random_state=0),
                 gmodel=Pipeline(
                     [
                         ("scaler", StandardScaler()),
@@ -92,9 +93,6 @@ for datatype in tqdm(
                     except Exception as e:
                         print(e)
                         print("Value Error", N, space, datatype, state)
-                        import pdb
-
-                        pdb.set_trace()
                         auc_ood = 1
                     res.append([datatype, sort, N, space, state, auc_tr - auc_ood])
 # %%
