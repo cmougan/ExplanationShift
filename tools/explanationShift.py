@@ -134,7 +134,7 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         return self.gmodel.predict(self.get_explanations(X))
 
     def predict_proba(self, X):
-        return self.gmodel.predict_proba(self.get_explanations(X, masker=X))
+        return self.gmodel.predict_proba(self.get_explanations(X))
 
     def explanation_predict(self, X):
         return self.gmodel.predict(X)
