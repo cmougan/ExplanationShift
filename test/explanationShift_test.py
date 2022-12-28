@@ -21,7 +21,7 @@ def test_return_shapDF():
     XX = pd.DataFrame(X, columns=["a", "b", "c", "d", "e"])
 
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression(), masker=XX
+        model=LinearRegression(), gmodel=LogisticRegression(), masker=True
     )
     esd.fit_model(XX, y)
     ex = esd.get_explanations(XX)
@@ -49,7 +49,7 @@ def test_no_nan():
     Check that no NaNs are present in the shap values.
     """
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression(), masker=X
+        model=LinearRegression(), gmodel=LogisticRegression(), masker=True
     )
     esd.fit_model(X, y)
     ex = esd.get_explanations(X)
@@ -61,7 +61,7 @@ def test_get_coefs_linear():
     Check that the coefficients are returned correctly for the linear regression.
     """
     esd = ExplanationShiftDetector(
-        model=LinearRegression(), gmodel=LogisticRegression(), masker=X
+        model=LinearRegression(), gmodel=LogisticRegression(), masker=True
     )
     esd.fit(X, y, X_ood)
     coefs = esd.get_linear_coefs()
@@ -88,7 +88,7 @@ def test_get_coefs_pipeline():
     esd = ExplanationShiftDetector(
         model=LinearRegression(),
         gmodel=Pipeline([("scaler", StandardScaler()), ("lr", LogisticRegression())]),
-        masker=X,
+        masker=True,
     )
     esd.fit(X_tr, y_tr, X_ood)
     coefs = esd.get_coefs()
@@ -126,7 +126,7 @@ def test_spaces():
         model=LinearRegression(),
         gmodel=LogisticRegression(),
         space="input",
-        masker=X_tr,
+        masker=True,
     )
     esd.fit(X_tr, y_tr, X_ood)
     # Check if returns input space
@@ -137,7 +137,7 @@ def test_spaces():
         model=LogisticRegression(),
         gmodel=LogisticRegression(),
         space="prediction",
-        masker=X,
+        masker=True,
     )
     esd.fit(X, y, X_ood)
     np.testing.assert_array_equal(
@@ -151,7 +151,7 @@ def test_spaces():
         model=LinearRegression(),
         gmodel=LogisticRegression(),
         space="explanation",
-        masker=X,
+        masker=True,
     )
     esd.fit(X, y, X_ood)
 
@@ -163,7 +163,7 @@ def test_tree_shap():
     Check that the shap values are returned correctly for the tree models.
     """
     esd = ExplanationShiftDetector(
-        model=XGBRegressor(), gmodel=LogisticRegression(), masker=X
+        model=XGBRegressor(), gmodel=LogisticRegression(), masker=True
     )
     esd.fit(X, y, X_ood)
     shap_values = esd.get_explanations(X)

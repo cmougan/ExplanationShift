@@ -61,12 +61,11 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
                 you can also build those subclasses directly if you prefer or need more fine grained control over
                 their options.
 
-        masker : function or numpy.array or pandas.DataFrame or shap.common.Masker
+        masker : bool,
                 The masker object is used to define the background distribution over which the Shapley values
-                are estimated. If a function is passed then it is used to mask the input data. If a numpy.array
-                or pandas.DataFrame is passed then it is used as the background dataset. If a Masker object is
-                passed then it is used directly. If None is passed then the default Masker is used which assumes
-                the input data is a dense numpy.array or pandas.DataFrame.
+                are estimated. Is a boolean that indicates if the masker should be used or not. If True, the masker is used.
+                If False, the masker is not used. The background distribution is the same distribution as we are calculating the Shapley values.
+                TODO Decide which masker distribution is better to use, options are: train data, hold out data, ood data
         """
 
         self.model = model
@@ -110,12 +109,12 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
         self.fit_model(self.X_tr, self.y_tr)
 
         # Get explanations
-        self.S_val = self.get_explanations(self.X_val, masker=self.X_val)
-        self.S_ood = self.get_explanations(self.X_ood, masker=self.X_ood)
+        self.S_val = self.get_explanations(self.X_val)
+        self.S_ood = self.get_explanations(self.X_ood)
 
         # Create dataset for  explanation shift detector
-        self.S_val["label"] = 0
-        self.S_ood["label"] = 1
+        self.S_val["label"] = False
+        self.S_ood["label"] = True
 
         self.S = pd.concat([self.S_val, self.S_ood])
 
@@ -149,11 +148,16 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
     def fit_explanation_shift(self, X, y):
         self.gmodel.fit(X, y)
 
-    def get_explanations(self, X, masker):
+    def get_explanations(self, X, data_masker=None):
+        if data_masker == None:
+            data_masker = X
+        else:
+            data_masker = data_masker
+
         if self.space == "explanation":
             if self.masker:
                 self.explainer = shap.Explainer(
-                    self.model, algorithm=self.algorithm, masker=masker
+                    self.model, algorithm=self.algorithm, masker=data_masker
                 )
             else:
                 self.explainer = shap.Explainer(self.model, algorithm=self.algorithm)
