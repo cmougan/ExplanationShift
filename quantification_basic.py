@@ -6,6 +6,7 @@ import pandas as pd
 import random
 
 from tqdm import tqdm
+import numpy as np
 
 random.seed(0)
 # Scikit Learn
@@ -24,14 +25,14 @@ from tools.explanationShift import ExplanationShiftDetector
 
 # %%
 data = GetData(type="real", datasets="ACSIncome")
-X, y = data.get_state(state="HI", year="2014")
+X, y = data.get_state(state="CA", year="2014")
 # Hold out set for CA-14
 X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
     X, y, test_size=0.5, stratify=y, random_state=0
 )
 X, y = X_cal_1, y_cal_1
 # OOD Data
-X_ood, y_ood = data.get_state(state="CA", year="2018")
+X_ood, y_ood = data.get_state(state="NY", year="2018")
 X_ood, X_ood_te, y_ood, y_ood_te = train_test_split(
     X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=0
 )
@@ -63,6 +64,7 @@ detector = ExplanationShiftDetector(
         ]
     ),
     # model = LogisticRegression(),
+    space="input",
     masker=True,
 )
 
@@ -78,7 +80,7 @@ print("g2: ", roc_auc_score(y_hold_ood, detector.predict_proba(X_hold)[:, 1]))
 # %%
 aux = X_hold.copy()
 aux["OOD"] = detector.predict_proba(X_hold)[:, 1]
-aux["error"] = y_hold.real.values - detector.model.predict_proba(X_hold)[:, 1]
+aux["error"] = np.abs(y_hold.real.values - detector.model.predict_proba(X_hold)[:, 1])
 # %%
 aux = aux.sort_values(by="error", ascending=False).reset_index(drop=True)
 # %%
@@ -91,7 +93,18 @@ plt.title("Error vs Index")
 plt.legend()
 plt.show()
 # %%
+plt.figure(figsize=(10, 10))
+plt.scatter(x=aux["OOD"], y=aux["error"], label="Error")
+plt.xlabel("OOD Explanations")
+plt.ylabel("Error")
+plt.title("Error vs OOD Explanations")
+plt.show()
+# %%
 from scipy.stats import pearsonr
 
 pearsonr(aux["error"], aux["OOD"])
+# %%
+import seaborn as sns
+
+sns.kdeplot(aux["OOD"])
 # %%
