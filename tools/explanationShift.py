@@ -150,7 +150,7 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
 
     def get_explanations(self, X, data_masker=None):
         if data_masker == None:
-            data_masker = X
+            data_masker = self.X_tr
         else:
             data_masker = data_masker
 

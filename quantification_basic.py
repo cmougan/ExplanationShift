@@ -62,6 +62,8 @@ detector = ExplanationShiftDetector(
             ("lr", LogisticRegression(penalty="l1", solver="liblinear")),
         ]
     ),
+    # model = LogisticRegression(),
+    masker=True,
 )
 
 detector.fit(X, y, X_ood)
@@ -88,4 +90,8 @@ plt.ylabel("Error")
 plt.title("Error vs Index")
 plt.legend()
 plt.show()
+# %%
+from scipy.stats import pearsonr
+
+pearsonr(aux["error"], aux["OOD"])
 # %%
