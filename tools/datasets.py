@@ -150,4 +150,9 @@ class GetData:
         X_ood = pd.DataFrame(X_ood, columns=self.dataset.features).rename(columns=d)
         self.X_ood = X_ood.head(self.N)
         self.y_ood = y_ood[: self.N]
+
+        if "State" in self.X_ood.columns:
+            self.X_ood = self.X_ood.drop(columns="State")
+        if "Area" in self.X_ood.columns:
+            self.X_ood = self.X_ood.drop(columns="Area")
         return self.X_ood, self.y_ood
