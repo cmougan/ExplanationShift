@@ -155,4 +155,6 @@ class GetData:
             self.X_ood = self.X_ood.drop(columns="State")
         if "Area" in self.X_ood.columns:
             self.X_ood = self.X_ood.drop(columns="Area")
+        if "WorkPlace" in self.X_ood.columns:
+            self.X_ood = self.X_ood.drop(columns="WorkPlace")
         return self.X_ood, self.y_ood
