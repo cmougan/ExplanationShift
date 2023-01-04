@@ -245,3 +245,10 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
                     self.gmodel.steps[-1][1].__module__
                 )
             )
+
+    def explain_detector(self):
+        exp = shap.Explainer(self.model)
+        shap_values = exp.shap_values(self.S_ood.drop(columns="label"))
+        shap.summary_plot(shap_values, self.S_ood.drop(columns="label"), plot_type="bar", show=False)
+    
+
