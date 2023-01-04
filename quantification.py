@@ -25,6 +25,7 @@ from tools.datasets import GetData
 from tools.explanationShift import ExplanationShiftDetector
 
 # %%
+res = []
 for datatype in tqdm(
     ["ACSMobility", "ACSPublicCoverage", "ACSTravelTime", "ACSEmployment", "ACSIncome"]
 ):
@@ -39,8 +40,7 @@ for datatype in tqdm(
     )
 
     # OOD Data
-    res = []
-    for state in ["NY", "TX", "MI", "MN", "WI", "FL"]:
+    for state in ["NY", "TX", "HI", "MN", "WI", "FL"]:
         X_ood, y_ood = data.get_state(state=state, year="2018")
         X_ood_tr, X_ood_te, y_ood_tr, y_ood_te = train_test_split(
             X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=0
@@ -62,7 +62,6 @@ for datatype in tqdm(
                 pd.DataFrame(y_ood_tr, columns=["real"]),
             ]
         )
-        # %%
         # Test data for G
         X_te["OOD"] = 0
         X_ood_te["OOD"] = 1
@@ -80,7 +79,6 @@ for datatype in tqdm(
                 pd.DataFrame(y_ood_te, columns=["real"]),
             ]
         )
-        # %%
         for space in ["explanation", "input", "prediction"]:
             print("----------------------------------")
             print(space)
@@ -138,5 +136,11 @@ for datatype in tqdm(
 
 # %%
 # Save results
-df = pd.DataFrame(res, columns=["state", "space", "decay"])
-df.to_csv("results/decay.csv", index=False)
+df = pd.DataFrame(res, columns=["data", "state", "space", "decay"])
+df.to_csv("results/decay_hard.csv", index=False)
+# %%
+# Pivot table highlight max
+df.pivot_table(
+    index=["data", "state"], columns="space", values="decay"
+).style.highlight_max(color="lightgreen", axis=1)
+# %%
