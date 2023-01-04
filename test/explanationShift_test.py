@@ -181,3 +181,12 @@ def test_tree_shap():
     assert not np.any(np.isnan(shap_values2))
     # Assert that the shap values are different depending on the masker
     assert shap_values2.sum(axis=1).sum(axis=0) != shap_values.sum(axis=1).sum(axis=0)
+
+
+def test_explain_detector():
+    for space in ["input", "prediction", "explanation"]:
+        esd = ExplanationShiftDetector(
+            model=XGBClassifier(), gmodel=XGBClassifier(), space=space
+        )
+        esd.fit(X, y, X_ood)
+        esd.explain_detector()

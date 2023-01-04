@@ -247,7 +247,10 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
             )
 
     def explain_detector(self):
+        if self.space == "prediction":
+            return
         exp = shap.Explainer(self.model)
+
         shap_values = exp.shap_values(self.S_ood.drop(columns="label"))
         shap.summary_plot(
             shap_values, self.S_ood.drop(columns="label"), plot_type="bar", show=False
