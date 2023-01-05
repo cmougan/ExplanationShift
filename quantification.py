@@ -137,7 +137,7 @@ for datatype in tqdm(
 # %%
 # Save results
 df = pd.DataFrame(res, columns=["data", "state", "space", "decay"])
-df.to_csv("results/decay_hard.csv", index=False)
+df.to_csv("results/decay.csv", index=False)
 # %%
 # Pivot table highlight max
 df.pivot_table(
