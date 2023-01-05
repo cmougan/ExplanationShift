@@ -30,7 +30,7 @@ for datatype in [
 ]:
     for state in ["NY", "TX", "HI", "MN", "CA", "FL"]:
         data = GetData(type="real", datasets=datatype)
-        X, y = data.get_state(state="CA", year="2014")
+        X, y = data.get_state(state=state, year="2014")
 
         # What is the most important feature?
         model = XGBClassifier()
@@ -129,12 +129,26 @@ for datatype in [
                         aux[aux["ood_pred"] == 1].pred_proba.values,
                     ),
                     "auc_tr": auc_tr,
-                    "auc_ood_tr": roc_auc_score(
-                        aux[aux["ood_pred"] == 0].real,
-                        aux[aux["ood_pred"] == 0].pred_proba.values,
-                    ),
                 }
             )
 # %%
 res = pd.DataFrame(res)
 res.to_csv("results/hard_shift.csv", index=False)
+# %%
+res = res[["state", "dataset", "space", "decay"]]
+# %%
+# Pivot table
+result = res.pivot_table(
+    index=["state", "dataset"], columns="space", values="decay"
+).reset_index()
+
+# %%
+# Highlight the maximum value for each state
+result.style.highlight_max(
+    color="lightgreen", axis=1, subset=["input", "prediction", "explanation"]
+)
+
+
+# %%
+
+# %%
