@@ -29,7 +29,7 @@ res = []
 for datatype in tqdm(
     ["ACSMobility", "ACSPublicCoverage", "ACSTravelTime", "ACSEmployment", "ACSIncome"]
 ):
-    data = GetData(type="real", datasets="ACSIncome")
+    data = GetData(type="real", datasets=datatype)
     X, y = data.get_state(state="CA", year="2014")
     # Split data into train, val and test
     X_tr, X_te, y_tr, y_te = train_test_split(
@@ -112,22 +112,19 @@ for datatype in tqdm(
             print("g: ", detector.get_auc_val())
 
             # Analyze
-            aux = X_hold_test.copy()
-            aux["real"] = y_hold_test["real"].values
-            aux["pred"] = detector.model.predict(X_hold_test)
-            aux["pred_proba"] = detector.model.predict_proba(X_hold_test)[:, 1]
-            aux["ood"] = z_hold_test.values
-            aux["ood_pred"] = detector.predict(X_hold_test)
-            aux["ood_pred_proba"] = detector.predict_proba(X_hold_test)[:, 1]
+            aux = X_ood_te.copy()
+            aux["real"] = y_ood_te["real"].values
+            aux["pred"] = detector.model.predict(X_ood_te)
+            aux["pred_proba"] = detector.model.predict_proba(X_ood_te)[:, 1]
+            # aux["ood"] = z_hold_test.values
+            aux["ood_pred"] = detector.predict(X_ood_te)
+            aux["ood_pred_proba"] = detector.predict_proba(X_ood_te)[:, 1]
             print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
 
             try:
-                decay = roc_auc_score(
+                decay = auc_te - roc_auc_score(
                     aux[aux["ood_pred"] == 0].real,
                     aux[aux["ood_pred"] == 0].pred_proba.values,
-                ) - roc_auc_score(
-                    aux[aux["ood_pred"] == 1].real,
-                    aux[aux["ood_pred"] == 1].pred_proba.values,
                 )
             except:
                 decay = 0
@@ -142,5 +139,5 @@ df.to_csv("results/decay.csv", index=False)
 # Pivot table highlight max
 df.pivot_table(
     index=["data", "state"], columns="space", values="decay"
-).style.highlight_max(color="lightgreen", axis=1)
+).style.highlight_min(color="lightgreen", axis=1)
 # %%

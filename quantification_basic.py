@@ -100,10 +100,8 @@ for space in ["input", "prediction", "explanation"]:
     # auc_ood = roc_auc_score(aux.real, aux.pred_proba.values)
 
     try:
-        decay = roc_auc_score(
+        decay = auc_tr - roc_auc_score(
             aux[aux["ood_pred"] == 0].real, aux[aux["ood_pred"] == 0].pred_proba.values
-        ) - roc_auc_score(
-            aux[aux["ood_pred"] == 1].real, aux[aux["ood_pred"] == 1].pred_proba.values
         )
     except:
         decay = 0
