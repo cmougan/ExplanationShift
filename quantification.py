@@ -6,160 +6,129 @@ import pandas as pd
 import random
 
 from tqdm import tqdm
-import numpy as np
-from sklearn.metrics import confusion_matrix
 
 random.seed(0)
 # Scikit Learn
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from tools.explanationShift import ExplanationShiftDetector
+import seaborn as sns
 
 plt.style.use("seaborn-whitegrid")
 from xgboost import XGBClassifier
+from catboost import CatBoostClassifier
 
 from tools.datasets import GetData
 from tools.explanationShift import ExplanationShiftDetector
 
 # %%
 res = []
+states = ["NY18", "TX18", "MI18", "MN18", "WI18", "FL18"]
 for datatype in tqdm(
     [
         "ACSMobility",
         "ACSPublicCoverage",
-    ]  # , "ACSTravelTime", "ACSEmployment", "ACSIncome"]
+        "ACSTravelTime",
+        "ACSEmployment",
+        "ACSIncome",
+    ]
 ):
     data = GetData(type="real", datasets=datatype)
     X, y = data.get_state(state="CA", year="2014")
-    # Split data into train, val and test
-    X_tr, X_te, y_tr, y_te = train_test_split(
-        X, y, test_size=0.3, stratify=y, random_state=0
+    # Hold out set for CA-14
+    X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
+        X, y, test_size=0.5, stratify=y, random_state=0
     )
-    X_tr, X_val, y_tr, y_val = train_test_split(
-        X_tr, y_tr, test_size=0.5, stratify=y_tr, random_state=0
-    )
+    X, y = X_cal_1, y_cal_1
 
-    # OOD Data
-    for state in ["NY", "TX", "HI"]:  # , "MN", "WI", "FL"]:
-        X_ood, y_ood = data.get_state(state=state, year="2018")
-        X_ood_tr, X_ood_te, y_ood_tr, y_ood_te = train_test_split(
+    for state in tqdm(states):
+        X_ood, y_ood = data.get_state(state=state[:2], year="20" + state[2:], N=20_000)
+        X_ood, X_ood_te, y_ood, y_ood_te = train_test_split(
             X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=0
         )
-        # Train data for G
-        X_val["OOD"] = 0
-        X_ood_tr["OOD"] = 1
-        X_hold = pd.concat([X_val, X_ood_tr])
-        z_hold_tr = X_hold["OOD"]
 
-        # Drop columns to avoid errors
-        X_hold = X_hold.drop(columns=["OOD"])
-        X_val = X_val.drop(columns=["OOD"])
-        X_ood_tr = X_ood_tr.drop(columns=["OOD"])
-        # The real y
-        y_hold_tr = pd.concat(
-            [
-                pd.DataFrame(y_val, columns=["real"]),
-                pd.DataFrame(y_ood_tr, columns=["real"]),
-            ]
-        )
-        # Test data for G
-        X_te["OOD"] = 0
-        X_ood_te["OOD"] = 1
-        X_hold_test = pd.concat([X_te, X_ood_te])
-        z_hold_test = X_hold_test["OOD"]
-
-        # Drop columns to avoid errors
-        X_hold_test = X_hold_test.drop(columns=["OOD"])
-        X_te = X_te.drop(columns=["OOD"])
-        X_ood_te = X_ood_te.drop(columns=["OOD"])
-        # The real y
-        y_hold_test = pd.concat(
-            [
-                pd.DataFrame(y_te, columns=["real"]),
-                pd.DataFrame(y_ood_te, columns=["real"]),
-            ]
-        )
+        # Build detector
         for space in ["explanation", "input", "prediction"]:
-            print("----------------------------------")
-            print(space)
-            print("----------------------------------")
-            # Fit our estimator
             detector = ExplanationShiftDetector(
                 model=XGBClassifier(max_depth=3, random_state=0),
                 gmodel=Pipeline(
                     [
                         ("scaler", StandardScaler()),
-                        ("clf", LogisticRegression(random_state=0, penalty="l2")),
+                        ("lr", LogisticRegression(penalty="l1", solver="liblinear")),
                     ]
                 ),
                 space=space,
                 masker=False,
             )
-            if "label" in X_ood_tr.columns:
-                X_ood_tr = X_ood_tr.drop(columns=["label"])
+            if "label" in X_ood.columns:
+                X_ood = X_ood.drop(columns=["label"])
+            detector.fit(X, y, X_ood)
 
-            detector.fit(X_tr, y_tr, X_ood_tr)
-            detector.explain_detector()
+            # Performance of model on X_train hold out
+            auc_tr = roc_auc_score(y_cal_2, detector.model.predict_proba(X_cal_2)[:, 1])
 
-            # Does the model decay?
-            print("Does the model decay?")
-            auc_te = np.round(
-                roc_auc_score(y_te, detector.model.predict_proba(X_te)[:, 1]), 3
-            )
-            auc_ood = np.round(
-                roc_auc_score(y_ood_te, detector.model.predict_proba(X_ood_te)[:, 1]), 3
-            )
-            print("AUC TE", auc_te)
-            print("AUC OOD", auc_ood)
+            # Performance of detector on X_ood hold out
+            auc_hold = roc_auc_score(y_ood_te, detector.predict_proba(X_ood_te)[:, 1])
+            print(space, datatype, state, auc_hold)
+            # Exp Space
+            X_ood_te_ = X_ood_te.copy()
+            X_ood_te_["pred"] = detector.predict_proba(X_ood_te)[:, 1]
+            X_ood_te_["y"] = y_ood_te
 
-            # Does the model G have good performance?
-            print("Does the model G have good performance?")
-            print("g: ", detector.get_auc_val())
-
-            # Analysis on X_ood_te
-            aux = X_ood_te.copy()
-            aux["real"] = y_ood_te
-            aux["pred_proba"] = detector.model.predict_proba(X_ood_te)[:, 1]
-            aux["ood"] = 1
-            aux["ood_pred_proba"] = detector.predict_proba(X_ood_te)[:, 1]
-            # Sort
-            aux = aux.sort_values(by="ood_pred_proba", ascending=True)
-            # Decay
-            for f in [
-                100,
-                1000,
-                int(aux.shape[0] * 0.75),
-            ]:  # , int(aux.shape[0]*0.5), int(aux.shape[0]*0.25)]:
-                try:
-                    decay = roc_auc_score(
-                        aux.head(f).real,
-                        aux.head(f).pred_proba.values,
-                    )
-                except Exception as e:
-                    print(e)
-                    decay = 0.5
-
-                res.append(
-                    [
-                        datatype,
-                        state,
-                        f,
-                        space,
-                        decay,
-                    ]
-                )
+            for sort in [True, False]:
+                X_ood_te_ = X_ood_te_.sort_values("pred", ascending=sort)
+                for N in [20_000, 5_000, 1_000, 500, 100]:
+                    try:
+                        auc_ood = roc_auc_score(
+                            X_ood_te_.head(N).y,
+                            detector.model.predict_proba(
+                                X_ood_te_.head(N).drop(columns=["y", "pred"])
+                            )[:, 1],
+                        )
+                    except Exception as e:
+                        print(e)
+                        print("Value Error", N, space, datatype, state)
+                        auc_ood = 1
+                    res.append([datatype, sort, N, space, state, auc_ood])
+# %%
+results_ = pd.DataFrame(
+    res, columns=["dataset", "sort", "N", "space", "state", "auc_diff"]
+)
+# %%
+# Convert results to table with State vs Space
+results_ = results_.pivot(
+    index=["state", "dataset", "N", "sort"], columns="space", values="auc_diff"
+).reset_index()
+# %%
+results = results_[results_["N"] == 1_000]
+# %%
+# Closer to 0 is better State
+results[results["sort"] == True].groupby(
+    ["dataset", "state"]
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).to_csv(
+    "results/results_low.csv"
+)  # .style.highlight_min(color="lightgreen", axis=1, subset=["explanation", "input", "prediction"])
+results[results["sort"] == True].groupby(
+    ["dataset", "state"]
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_max(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
+)
 
 # %%
-# Save results
-df = pd.DataFrame(res, columns=["data", "state", "samples", "space", "decay"])
-df.to_csv("results/decay.csv", index=False)
+results = results_[results_["N"] == 500]
 # %%
-# Pivot table highlight max
-df.pivot_table(
-    index=["data", "state", "samples"], columns="space", values="decay"
-).style.highlight_max(color="lightgreen", axis=1)
+# Higher is better highlight State
+results[results["sort"] == False].groupby(
+    ["dataset", "state"]
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).to_csv(
+    "results/results_high.csv"
+)
+results[results["sort"] == False].groupby(
+    ["dataset", "state"]
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_max(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
+)
 # %%
