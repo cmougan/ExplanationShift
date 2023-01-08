@@ -124,7 +124,7 @@ for datatype in tqdm(
             aux["pred_proba"] = detector.model.predict_proba(X_hold_test)[:, 1]
             aux["ood"] = z_hold_test.values
             aux["ood_pred_proba"] = detector.predict_proba(X_hold_test)[:, 1]
-            threshold = np.quantile(aux["ood_pred_proba"], 0.95)
+            threshold = np.quantile(aux["ood_pred_proba"], 0.50)
             aux["ood_pred"] = aux["ood_pred_proba"] > threshold
             print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
 
@@ -136,8 +136,8 @@ for datatype in tqdm(
 
             try:
                 decay = auc_te - roc_auc_score(
-                    aux[(aux["ood_pred"] == 1) & (aux["ood"] == 0)].real,
-                    aux[(aux["ood_pred"] == 1) & (aux["ood"] == 0)].pred_proba.values,
+                    aux[(aux["ood_pred"] == 0)].real,
+                    aux[(aux["ood_pred"] == 0)].pred_proba.values,
                 )
             except:
                 decay = 0
