@@ -103,8 +103,6 @@ for space in ["input", "prediction", "explanation"]:
     print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
     auc_id = roc_auc_score(
         aux[aux["ood_pred"] == 0].real, aux[aux["ood_pred"] == 0].pred_proba.values
-    ) - roc_auc_score(
-        aux[aux["ood_pred"] == 1].real, aux[aux["ood_pred"] == 1].pred_proba.values
     )
 
     # On X_ood_te
@@ -119,10 +117,7 @@ for space in ["input", "prediction", "explanation"]:
     print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
     auc_ood = roc_auc_score(
         aux[aux["ood_pred"] == 0].real, aux[aux["ood_pred"] == 0].pred_proba.values
-    ) - roc_auc_score(
-        aux[aux["ood_pred"] == 1].real, aux[aux["ood_pred"] == 1].pred_proba.values
     )
-
     aux = X_hold.copy()
     aux["real"] = y_hold.values
     aux["pred"] = detector.model.predict(X_hold)
