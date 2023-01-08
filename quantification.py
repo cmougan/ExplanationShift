@@ -7,6 +7,7 @@ import random
 
 from tqdm import tqdm
 import numpy as np
+from sklearn.metrics import confusion_matrix
 
 random.seed(0)
 # Scikit Learn
@@ -85,8 +86,13 @@ for datatype in tqdm(
             print("----------------------------------")
             # Fit our estimator
             detector = ExplanationShiftDetector(
-                model=XGBClassifier(random_state=0),
-                gmodel=XGBClassifier(random_state=0),
+                model=XGBClassifier(max_depth=3, random_state=0),
+                gmodel=Pipeline(
+                    [
+                        ("scaler", StandardScaler()),
+                        ("clf", LogisticRegression(random_state=0, penalty="l2")),
+                    ]
+                ),
                 space=space,
                 masker=False,
             )
@@ -112,28 +118,35 @@ for datatype in tqdm(
             print("g: ", detector.get_auc_val())
 
             # Analyze
-            aux = X_ood_te.copy()
-            aux["real"] = y_ood_te["real"].values
-            aux["pred"] = detector.model.predict(X_ood_te)
-            aux["pred_proba"] = detector.model.predict_proba(X_ood_te)[:, 1]
-            # aux["ood"] = z_hold_test.values
-            aux["ood_pred"] = detector.predict(X_ood_te)
-            aux["ood_pred_proba"] = detector.predict_proba(X_ood_te)[:, 1]
+            aux = X_hold_test.copy()
+            aux["real"] = y_hold_test["real"].values
+            aux["pred"] = detector.model.predict(X_hold_test)
+            aux["pred_proba"] = detector.model.predict_proba(X_hold_test)[:, 1]
+            aux["ood"] = z_hold_test.values
+            aux["ood_pred_proba"] = detector.predict_proba(X_hold_test)[:, 1]
+            threshold = np.quantile(aux["ood_pred_proba"], 0.95)
+            aux["ood_pred"] = aux["ood_pred_proba"] > threshold
             print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
+
+            tn, fp, fn, tp = confusion_matrix(aux.ood.values, aux.ood_pred).ravel()
+            fpr = fp / (fp + tn)
+            negative_predictive_value = tn / (tn + fn)
+            print("False positives ", fp)
+            print("False positives rate ", fpr)
 
             try:
                 decay = auc_te - roc_auc_score(
-                    aux[aux["ood_pred"] == 0].real,
-                    aux[aux["ood_pred"] == 0].pred_proba.values,
+                    aux[(aux["ood_pred"] == 1) & (aux["ood"] == 0)].real,
+                    aux[(aux["ood_pred"] == 1) & (aux["ood"] == 0)].pred_proba.values,
                 )
             except:
                 decay = 0
             print(space, decay)
-            res.append([datatype, state, space, decay])
+            res.append([datatype, state, space, decay, fpr])
 
 # %%
 # Save results
-df = pd.DataFrame(res, columns=["data", "state", "space", "decay"])
+df = pd.DataFrame(res, columns=["data", "state", "space", "decay", "fpr"])
 df.to_csv("results/decay.csv", index=False)
 # %%
 # Pivot table highlight max
