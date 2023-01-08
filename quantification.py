@@ -28,7 +28,10 @@ from tools.explanationShift import ExplanationShiftDetector
 # %%
 res = []
 for datatype in tqdm(
-    ["ACSMobility", "ACSPublicCoverage", "ACSTravelTime", "ACSEmployment", "ACSIncome"]
+    [
+        "ACSMobility",
+        "ACSPublicCoverage",
+    ]  # , "ACSTravelTime", "ACSEmployment", "ACSIncome"]
 ):
     data = GetData(type="real", datasets=datatype)
     X, y = data.get_state(state="CA", year="2014")
@@ -41,7 +44,7 @@ for datatype in tqdm(
     )
 
     # OOD Data
-    for state in ["NY", "TX", "HI", "MN", "WI", "FL"]:
+    for state in ["NY", "TX", "HI"]:  # , "MN", "WI", "FL"]:
         X_ood, y_ood = data.get_state(state=state, year="2018")
         X_ood_tr, X_ood_te, y_ood_tr, y_ood_te = train_test_split(
             X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=0
@@ -117,63 +120,46 @@ for datatype in tqdm(
             print("Does the model G have good performance?")
             print("g: ", detector.get_auc_val())
 
-            # Two preds
-            ## On X_val
-            print("VAL")
-            aux = X_val.copy()
-            aux["real"] = y_val
-            aux["pred"] = detector.model.predict(X_val)
-            aux["pred_proba"] = detector.model.predict_proba(X_val)[:, 1]
-            # aux["ood"] = z_val_test.values
-
-            aux["ood_pred_proba"] = detector.predict_proba(X_val)[:, 1]
-            # Use the threshold to flag as OOD
-            aux["ood_pred"] = detector.predict_proba(X_val)[:, 1] > 0.95
-            print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
-            auc_id = roc_auc_score(
-                aux[aux["ood_pred"] == 1].real,
-                aux[aux["ood_pred"] == 1].pred_proba.values,
-            )
-
-            # On X_ood_te
-            print("OOD")
+            # Analysis on X_ood_te
             aux = X_ood_te.copy()
-            aux["real"] = y_ood_te.values
-            aux["pred"] = detector.model.predict(X_ood_te)
+            aux["real"] = y_ood_te
             aux["pred_proba"] = detector.model.predict_proba(X_ood_te)[:, 1]
-            # aux["ood"] = z_ood_te_test.values
-            # Use the threshold to flag as OOD
-            aux["ood_pred"] = detector.predict_proba(X_ood_te)[:, 1] > 0.95
-            print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
-            auc_ood = roc_auc_score(
-                aux[aux["ood_pred"] == 1].real,
-                aux[aux["ood_pred"] == 1].pred_proba.values,
-            )
+            aux["ood"] = 1
+            aux["ood_pred_proba"] = detector.predict_proba(X_ood_te)[:, 1]
+            # Sort
+            aux = aux.sort_values(by="ood_pred_proba", ascending=True)
+            # Decay
+            for f in [
+                100,
+                1000,
+                int(aux.shape[0] * 0.75),
+            ]:  # , int(aux.shape[0]*0.5), int(aux.shape[0]*0.25)]:
+                try:
+                    decay = roc_auc_score(
+                        aux.head(f).real,
+                        aux.head(f).pred_proba.values,
+                    )
+                except Exception as e:
+                    print(e)
+                    decay = 0.5
 
-            aux = X_hold.copy()
-            aux["real"] = y_hold.values
-            aux["pred"] = detector.model.predict(X_hold)
-            aux["pred_proba"] = detector.model.predict_proba(X_hold)[:, 1]
-            # aux["ood"] = z_hold_test.values
-            aux["ood_pred"] = detector.predict(X_hold)
-            # aux["ood_pred_proba"] = detector.predict_proba(X_hold_test)[:, 1]
-            print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
-            # auc_ood = roc_auc_score(aux.real, aux.pred_proba.values)
-
-            try:
-                decay = auc_id - auc_ood
-            except:
-                decay = 0
-            print(space, decay)
-            res.append([datatype, state, space, decay])
+                res.append(
+                    [
+                        datatype,
+                        state,
+                        f,
+                        space,
+                        decay,
+                    ]
+                )
 
 # %%
 # Save results
-df = pd.DataFrame(res, columns=["data", "state", "space", "decay"])
+df = pd.DataFrame(res, columns=["data", "state", "samples", "space", "decay"])
 df.to_csv("results/decay.csv", index=False)
 # %%
 # Pivot table highlight max
 df.pivot_table(
-    index=["data", "state"], columns="space", values="decay"
-).style.highlight_min(color="lightgreen", axis=1)
+    index=["data", "state", "samples"], columns="space", values="decay"
+).style.highlight_max(color="lightgreen", axis=1)
 # %%
