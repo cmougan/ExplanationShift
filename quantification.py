@@ -2,10 +2,9 @@
 import matplotlib.pyplot as plt
 
 plt.rcParams.update({"font.size": 14})
+plt.style.use("seaborn-whitegrid")
 import pandas as pd
 import random
-
-from tqdm import tqdm
 
 random.seed(0)
 # Scikit Learn
@@ -15,11 +14,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from tools.explanationShift import ExplanationShiftDetector
-import seaborn as sns
 
-plt.style.use("seaborn-whitegrid")
+# External Libraries
 from xgboost import XGBClassifier
-from catboost import CatBoostClassifier
+from tqdm import tqdm
 
 from tools.datasets import GetData
 from tools.explanationShift import ExplanationShiftDetector
@@ -53,7 +51,7 @@ for datatype in tqdm(
         # Build detector
         for space in ["explanation", "input", "prediction"]:
             detector = ExplanationShiftDetector(
-                model=XGBClassifier(max_depth=3, random_state=0),
+                model=XGBClassifier(max_depth=3, random_state=0, verbose=0),
                 gmodel=Pipeline(
                     [
                         ("scaler", StandardScaler()),
@@ -71,9 +69,12 @@ for datatype in tqdm(
             auc_tr = roc_auc_score(y_cal_2, detector.model.predict_proba(X_cal_2)[:, 1])
 
             # Performance of detector on X_ood hold out
-            auc_hold = roc_auc_score(y_ood_te, detector.predict_proba(X_ood_te)[:, 1])
+            auc_hold = roc_auc_score(
+                y_ood_te, detector.model.predict_proba(X_ood_te)[:, 1]
+            )
+
             print(space, datatype, state, auc_hold)
-            # Exp Space
+            # Analysis
             X_ood_te_ = X_ood_te.copy()
             X_ood_te_["pred"] = detector.predict_proba(X_ood_te)[:, 1]
             X_ood_te_["y"] = y_ood_te
@@ -92,7 +93,7 @@ for datatype in tqdm(
                         print(e)
                         print("Value Error", N, space, datatype, state)
                         auc_ood = 1
-                    res.append([datatype, sort, N, space, state, auc_ood])
+                    res.append([datatype, sort, N, space, state, auc_tr - auc_ood])
 # %%
 results_ = pd.DataFrame(
     res, columns=["dataset", "sort", "N", "space", "state", "auc_diff"]
@@ -103,7 +104,7 @@ results_ = results_.pivot(
     index=["state", "dataset", "N", "sort"], columns="space", values="auc_diff"
 ).reset_index()
 # %%
-results = results_[results_["N"] == 1_000]
+results = results_[results_["N"] == 5_000]
 # %%
 # Closer to 0 is better State
 results[results["sort"] == True].groupby(
@@ -113,22 +114,6 @@ results[results["sort"] == True].groupby(
 )  # .style.highlight_min(color="lightgreen", axis=1, subset=["explanation", "input", "prediction"])
 results[results["sort"] == True].groupby(
     ["dataset", "state"]
-).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_max(
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
     color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
 )
-
-# %%
-results = results_[results_["N"] == 500]
-# %%
-# Higher is better highlight State
-results[results["sort"] == False].groupby(
-    ["dataset", "state"]
-).mean().reset_index().drop(columns=["sort", "N"]).round(3).to_csv(
-    "results/results_high.csv"
-)
-results[results["sort"] == False].groupby(
-    ["dataset", "state"]
-).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_max(
-    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
-)
-# %%
