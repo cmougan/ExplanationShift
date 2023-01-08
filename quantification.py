@@ -117,36 +117,59 @@ for datatype in tqdm(
             print("Does the model G have good performance?")
             print("g: ", detector.get_auc_val())
 
-            # Analyze
-            aux = X_hold_test.copy()
-            aux["real"] = y_hold_test["real"].values
-            aux["pred"] = detector.model.predict(X_hold_test)
-            aux["pred_proba"] = detector.model.predict_proba(X_hold_test)[:, 1]
-            aux["ood"] = z_hold_test.values
-            aux["ood_pred_proba"] = detector.predict_proba(X_hold_test)[:, 1]
-            threshold = np.quantile(aux["ood_pred_proba"], 0.50)
-            aux["ood_pred"] = aux["ood_pred_proba"] > threshold
-            print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
+            # Two preds
+            ## On X_val
+            print("VAL")
+            aux = X_val.copy()
+            aux["real"] = y_val
+            aux["pred"] = detector.model.predict(X_val)
+            aux["pred_proba"] = detector.model.predict_proba(X_val)[:, 1]
+            # aux["ood"] = z_val_test.values
 
-            tn, fp, fn, tp = confusion_matrix(aux.ood.values, aux.ood_pred).ravel()
-            fpr = fp / (fp + tn)
-            negative_predictive_value = tn / (tn + fn)
-            print("False positives ", fp)
-            print("False positives rate ", fpr)
+            aux["ood_pred_proba"] = detector.predict_proba(X_val)[:, 1]
+            # Use the threshold to flag as OOD
+            aux["ood_pred"] = detector.predict_proba(X_val)[:, 1] > 0.95
+            print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
+            auc_id = roc_auc_score(
+                aux[aux["ood_pred"] == 1].real,
+                aux[aux["ood_pred"] == 1].pred_proba.values,
+            )
+
+            # On X_ood_te
+            print("OOD")
+            aux = X_ood_te.copy()
+            aux["real"] = y_ood_te.values
+            aux["pred"] = detector.model.predict(X_ood_te)
+            aux["pred_proba"] = detector.model.predict_proba(X_ood_te)[:, 1]
+            # aux["ood"] = z_ood_te_test.values
+            # Use the threshold to flag as OOD
+            aux["ood_pred"] = detector.predict_proba(X_ood_te)[:, 1] > 0.95
+            print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
+            auc_ood = roc_auc_score(
+                aux[aux["ood_pred"] == 1].real,
+                aux[aux["ood_pred"] == 1].pred_proba.values,
+            )
+
+            aux = X_hold.copy()
+            aux["real"] = y_hold.values
+            aux["pred"] = detector.model.predict(X_hold)
+            aux["pred_proba"] = detector.model.predict_proba(X_hold)[:, 1]
+            # aux["ood"] = z_hold_test.values
+            aux["ood_pred"] = detector.predict(X_hold)
+            # aux["ood_pred_proba"] = detector.predict_proba(X_hold_test)[:, 1]
+            print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
+            # auc_ood = roc_auc_score(aux.real, aux.pred_proba.values)
 
             try:
-                decay = auc_te - roc_auc_score(
-                    aux[(aux["ood_pred"] == 0)].real,
-                    aux[(aux["ood_pred"] == 0)].pred_proba.values,
-                )
+                decay = auc_id - auc_ood
             except:
                 decay = 0
             print(space, decay)
-            res.append([datatype, state, space, decay, fpr])
+            res.append([datatype, state, space, decay])
 
 # %%
 # Save results
-df = pd.DataFrame(res, columns=["data", "state", "space", "decay", "fpr"])
+df = pd.DataFrame(res, columns=["data", "state", "space", "decay"])
 df.to_csv("results/decay.csv", index=False)
 # %%
 # Pivot table highlight max

@@ -89,6 +89,40 @@ for space in ["input", "prediction", "explanation"]:
     )
     print("Auditor", detector.get_auc_val())
 
+    # Two preds
+    ## On X_val
+    print("VAL")
+    aux = X_val.copy()
+    aux["real"] = y_val.values
+    aux["pred"] = detector.model.predict(X_val)
+    aux["pred_proba"] = detector.model.predict_proba(X_val)[:, 1]
+    # aux["ood"] = z_val_test.values
+    aux["ood_pred_proba"] = detector.predict_proba(X_val)[:, 1]
+    # Use the threshold to flag as OOD
+    aux["ood_pred"] = detector.predict_proba(X_val)[:, 1] > 0.95
+    print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
+    auc_id = roc_auc_score(
+        aux[aux["ood_pred"] == 0].real, aux[aux["ood_pred"] == 0].pred_proba.values
+    ) - roc_auc_score(
+        aux[aux["ood_pred"] == 1].real, aux[aux["ood_pred"] == 1].pred_proba.values
+    )
+
+    # On X_ood_te
+    print("OOD")
+    aux = X_ood_te.copy()
+    aux["real"] = y_ood_te.values
+    aux["pred"] = detector.model.predict(X_ood_te)
+    aux["pred_proba"] = detector.model.predict_proba(X_ood_te)[:, 1]
+    # aux["ood"] = z_ood_te_test.values
+    # Use the threshold to flag as OOD
+    aux["ood_pred"] = detector.predict_proba(X_ood_te)[:, 1] > 0.95
+    print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
+    auc_ood = roc_auc_score(
+        aux[aux["ood_pred"] == 0].real, aux[aux["ood_pred"] == 0].pred_proba.values
+    ) - roc_auc_score(
+        aux[aux["ood_pred"] == 1].real, aux[aux["ood_pred"] == 1].pred_proba.values
+    )
+
     aux = X_hold.copy()
     aux["real"] = y_hold.values
     aux["pred"] = detector.model.predict(X_hold)
@@ -100,11 +134,14 @@ for space in ["input", "prediction", "explanation"]:
     # auc_ood = roc_auc_score(aux.real, aux.pred_proba.values)
 
     try:
-        decay = auc_tr - roc_auc_score(
-            aux[aux["ood_pred"] == 0].real, aux[aux["ood_pred"] == 0].pred_proba.values
-        )
+        decay = auc_id - auc_ood
+
     except:
         decay = 0
     print("Decay", decay)
+    print("AUC ID", auc_id)
+    print("AUC OOD", auc_ood)
 
+# %%
+auc_id
 # %%
