@@ -51,7 +51,7 @@ for datatype in tqdm(
         # Build detector
         for space in ["explanation", "input", "prediction"]:
             detector = ExplanationShiftDetector(
-                model=XGBClassifier(max_depth=3, random_state=0, verbose=0),
+                model=XGBClassifier(max_depth=3, random_state=0),
                 gmodel=Pipeline(
                     [
                         ("scaler", StandardScaler()),
