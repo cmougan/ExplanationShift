@@ -51,7 +51,7 @@ for datatype in tqdm(
         # Build detector
         for space in ["explanation", "input", "prediction"]:
             detector = ExplanationShiftDetector(
-                model=XGBClassifier(max_depth=3, random_state=0),
+                model=XGBClassifier(max_depth=10, random_state=0, verbosity=0),
                 gmodel=Pipeline(
                     [
                         ("scaler", StandardScaler()),
@@ -59,7 +59,7 @@ for datatype in tqdm(
                     ]
                 ),
                 space=space,
-                masker=True,
+                masker=False,
             )
             if "label" in X_ood.columns:
                 X_ood = X_ood.drop(columns=["label"])
@@ -104,7 +104,7 @@ results_ = results_.pivot(
     index=["state", "dataset", "N", "sort"], columns="space", values="auc_diff"
 ).reset_index()
 # %%
-results = results_[results_["N"] == 5_000]
+results = results_[results_["N"] == 1_000]
 # %%
 # Closer to 0 is better State
 results[results["sort"] == True].groupby(
@@ -117,3 +117,5 @@ results[results["sort"] == True].groupby(
 ).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
     color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
 )
+
+# %%
