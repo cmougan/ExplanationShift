@@ -59,7 +59,7 @@ for datatype in tqdm(
                     ]
                 ),
                 space=space,
-                masker=False,
+                masker=True,
             )
             if "label" in X_ood.columns:
                 X_ood = X_ood.drop(columns=["label"])
