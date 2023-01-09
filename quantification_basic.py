@@ -50,7 +50,7 @@ for datatype in tqdm(
             # Build detector
             for space in ["explanation", "input", "prediction"]:
                 detector = ExplanationShiftDetector(
-                    model=XGBClassifier(max_depth=10, random_state=i, verbosity=0),
+                    model=XGBClassifier(max_depth=3, random_state=i, verbosity=0),
                     gmodel=Pipeline(
                         [
                             ("scaler", StandardScaler()),
@@ -107,14 +107,14 @@ results_ = pd.DataFrame(
 # %%
 # Convert results to table with State vs Space
 results_ = results_.pivot(
-    index=["state", "dataset", "N", "sort"], columns="space", values="auc_diff"
+    index=["state", "dataset", "N", "i", "sort"], columns="space", values="auc_diff"
 ).reset_index()
 # %%
 results = results_[results_["N"] == 1_000]
 # %%
 # Closer to 0 is better State
 results[results["sort"] == True].groupby(
-    ["dataset", "state"]
+    ["dataset", "state", "i"]
 ).mean().reset_index().drop(columns=["sort", "N"]).round(3).to_csv(
     "results/results_low.csv"
 )  # .style.highlight_min(color="lightgreen", axis=1, subset=["explanation", "input", "prediction"])
@@ -124,4 +124,14 @@ results[results["sort"] == True].groupby(
     color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
 )
 
+# %%
+aux = results[results["sort"] == True]
+# %%
+aux.groupby(["state"]).mean().style.highlight_min(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
+)
+# %%
+aux.groupby(["state"]).std().style.highlight_min(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
+)
 # %%

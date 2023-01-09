@@ -11,7 +11,7 @@ random.seed(0)
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, log_loss, f1_score
 from sklearn.preprocessing import StandardScaler
 from tools.explanationShift import ExplanationShiftDetector
 
@@ -51,7 +51,7 @@ for datatype in tqdm(
         # Build detector
         for space in ["explanation", "input", "prediction"]:
             detector = ExplanationShiftDetector(
-                model=XGBClassifier(max_depth=10, random_state=0, verbosity=0),
+                model=XGBClassifier(max_depth=3, random_state=0, verbosity=0),
                 gmodel=Pipeline(
                     [
                         ("scaler", StandardScaler()),
@@ -69,9 +69,7 @@ for datatype in tqdm(
             auc_tr = roc_auc_score(y_cal_2, detector.model.predict_proba(X_cal_2)[:, 1])
 
             # Performance of detector on X_ood hold out
-            auc_hold = roc_auc_score(
-                y_ood_te, detector.model.predict_proba(X_ood_te)[:, 1]
-            )
+            auc_hold = roc_auc_score(y_ood_te, detector.model.predict(X_ood_te))
 
             print(space, datatype, state, auc_hold)
             # Analysis
@@ -117,5 +115,4 @@ results[results["sort"] == True].groupby(
 ).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
     color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
 )
-
 # %%
