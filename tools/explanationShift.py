@@ -186,8 +186,10 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
                     columns=columns_name,
                 )
         if self.space == "prediction":
-            shap_values = self.model.predict_proba(X)[:, 1]
-            # shap_values = self.model.predict(X)
+            try:
+                shap_values = self.model.predict_proba(X)[:, 1]
+            except:
+                shap_values = self.model.predict(X)
 
             # Name columns
             exp = pd.DataFrame(
