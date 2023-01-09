@@ -2,141 +2,126 @@
 import matplotlib.pyplot as plt
 
 plt.rcParams.update({"font.size": 14})
+plt.style.use("seaborn-whitegrid")
 import pandas as pd
 import random
-
-import numpy as np
 
 random.seed(0)
 # Scikit Learn
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler
 from tools.explanationShift import ExplanationShiftDetector
 
-plt.style.use("seaborn-whitegrid")
+# External Libraries
 from xgboost import XGBClassifier
+from tqdm import tqdm
 
 from tools.datasets import GetData
 from tools.explanationShift import ExplanationShiftDetector
 
 # %%
-data = GetData(type="real", datasets="ACSEmployment")
-X, y = data.get_state(state="CA", year="2014")
+res = []
+states = ["NY18", "TX18", "MI18", "MN18", "WI18", "FL18"]
+for datatype in tqdm(
+    [
+        "ACSTravelTime",
+    ]
+):
+    for i in range(1, 10):
+        data = GetData(type="real", datasets=datatype)
+        X, y = data.get_state(state="CA", year="2014")
+        # Hold out set for CA-14
+        X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
+            X, y, test_size=0.5, stratify=y, random_state=i
+        )
+        X, y = X_cal_1, y_cal_1
 
-# What is the most important feature?
-model = XGBClassifier()
-model.fit(X, y)
-importances = model.feature_importances_
+        for state in tqdm(states):
+            X_ood, y_ood = data.get_state(
+                state=state[:2], year="20" + state[2:], N=20_000
+            )
+            X_ood, X_ood_te, y_ood, y_ood_te = train_test_split(
+                X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=i
+            )
+
+            # Build detector
+            for space in ["explanation", "input", "prediction"]:
+                detector = ExplanationShiftDetector(
+                    model=XGBClassifier(max_depth=10, random_state=i, verbosity=0),
+                    gmodel=Pipeline(
+                        [
+                            ("scaler", StandardScaler()),
+                            (
+                                "lr",
+                                LogisticRegression(penalty="l1", solver="liblinear"),
+                            ),
+                        ]
+                    ),
+                    space=space,
+                    masker=False,
+                )
+                if "label" in X_ood.columns:
+                    X_ood = X_ood.drop(columns=["label"])
+                detector.fit(X, y, X_ood)
+
+                # Performance of model on X_train hold out
+                auc_tr = roc_auc_score(
+                    y_cal_2, detector.model.predict_proba(X_cal_2)[:, 1]
+                )
+
+                # Performance of detector on X_ood hold out
+                auc_hold = roc_auc_score(
+                    y_ood_te, detector.model.predict_proba(X_ood_te)[:, 1]
+                )
+
+                print(space, datatype, state, auc_hold)
+                # Analysis
+                X_ood_te_ = X_ood_te.copy()
+                X_ood_te_["pred"] = detector.predict_proba(X_ood_te)[:, 1]
+                X_ood_te_["y"] = y_ood_te
+
+                for sort in [True, False]:
+                    X_ood_te_ = X_ood_te_.sort_values("pred", ascending=sort)
+                    for N in [20_000, 5_000, 1_000, 500, 100]:
+                        try:
+                            auc_ood = roc_auc_score(
+                                X_ood_te_.head(N).y,
+                                detector.model.predict_proba(
+                                    X_ood_te_.head(N).drop(columns=["y", "pred"])
+                                )[:, 1],
+                            )
+                        except Exception as e:
+                            print(e)
+                            print("Value Error", N, space, datatype, state)
+                            auc_ood = 1
+                        res.append(
+                            [datatype, i, sort, N, space, state, auc_tr - auc_ood]
+                        )
 # %%
-# We select the most important feature
-most_important = np.argmax(importances)
-# Conver feature importance to pandas
-importances = pd.DataFrame(importances, index=X.columns, columns=["importance"])
-print('Most important feature: "{}"'.format(importances.index[most_important]))
-# We sort the data by the most important feature
-X["label"] = y
-X = X.sort_values(by=X.columns[most_important], ascending=True)
-# Split data into first and second half
-X_1 = X.iloc[: int(len(X) / 3), :]
-X_2 = X.iloc[2 * int(len(X) / 3) :, :]
-y_1 = X_1["label"]
-y_2 = X_2["label"]
-X = X.drop(columns=["label"])
-X_1 = X_1.drop(columns=["label"])
-X_2 = X_2.drop(columns=["label"])
-# Split X_1 into train and val
-X_tr, X_val, y_tr, y_val = train_test_split(
-    X_1, y_1, test_size=0.5, stratify=y_1, random_state=0
+results_ = pd.DataFrame(
+    res, columns=["dataset", "i", "sort", "N", "space", "state", "auc_diff"]
 )
-# Split X_2 into ood_tr and ood_te
-X_ood_tr, X_ood_te, y_ood_tr, y_ood_te = train_test_split(
-    X_2, y_2, test_size=0.5, stratify=y_2, random_state=0
+# %%
+# Convert results to table with State vs Space
+results_ = results_.pivot(
+    index=["state", "dataset", "N", "sort"], columns="space", values="auc_diff"
+).reset_index()
+# %%
+results = results_[results_["N"] == 1_000]
+# %%
+# Closer to 0 is better State
+results[results["sort"] == True].groupby(
+    ["dataset", "state"]
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).to_csv(
+    "results/results_low.csv"
+)  # .style.highlight_min(color="lightgreen", axis=1, subset=["explanation", "input", "prediction"])
+results[results["sort"] == True].groupby(
+    ["dataset", "state"]
+).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
+    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
 )
-# Concatenate X_te and X_ood_te
-X_val["ood"] = 0
-X_ood_te["ood"] = 1
-X_hold = pd.concat([X_val, X_ood_te])
-y_hold = pd.concat([y_val, y_ood_te])
-z_hold = X_hold["ood"]
-X_hold = X_hold.drop(columns=["ood"])
-X_val = X_val.drop(columns=["ood"])
-X_ood_te = X_ood_te.drop(columns=["ood"])
 
-# %%
-for space in ["input", "prediction", "explanation"]:
-    print("----------------------------------")
-    print(space)
-    print("----------------------------------")
-    detector = ExplanationShiftDetector(
-        model=XGBClassifier(max_depth=3, random_state=0),
-        gmodel=XGBClassifier(max_depth=3, random_state=0),
-        space=space,
-    )
-    if "label" in X_ood_tr.columns:
-        X_ood_tr = X_ood_tr.drop(columns=["label"])
-
-    detector.fit(X_tr, y_tr, X_ood_tr)
-    detector.explain_detector()
-    # Evaluate the model
-    auc_tr = roc_auc_score(y_val, detector.model.predict_proba(X_val)[:, 1])
-    print(
-        "AUC on test set",
-        auc_tr,
-    )
-    print(
-        "AUC on OOD test set",
-        roc_auc_score(y_ood_te, detector.model.predict_proba(X_ood_te)[:, 1]),
-    )
-    print("Auditor", detector.get_auc_val())
-
-    # Two preds
-    ## On X_val
-    print("VAL")
-    aux = X_val.copy()
-    aux["real"] = y_val.values
-    aux["pred"] = detector.model.predict(X_val)
-    aux["pred_proba"] = detector.model.predict_proba(X_val)[:, 1]
-    # aux["ood"] = z_val_test.values
-    aux["ood_pred_proba"] = detector.predict_proba(X_val)[:, 1]
-    # Use the threshold to flag as OOD
-    aux["ood_pred"] = detector.predict_proba(X_val)[:, 1] > 0.95
-    print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
-    auc_id = roc_auc_score(
-        aux[aux["ood_pred"] == 0].real, aux[aux["ood_pred"] == 0].pred_proba.values
-    )
-
-    # On X_ood_te
-    print("OOD")
-    aux = X_ood_te.copy()
-    aux["real"] = y_ood_te.values
-    aux["pred"] = detector.model.predict(X_ood_te)
-    aux["pred_proba"] = detector.model.predict_proba(X_ood_te)[:, 1]
-    # aux["ood"] = z_ood_te_test.values
-    # Use the threshold to flag as OOD
-    aux["ood_pred"] = detector.predict_proba(X_ood_te)[:, 1] > 0.95
-    print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
-    auc_ood = roc_auc_score(
-        aux[aux["ood_pred"] == 0].real, aux[aux["ood_pred"] == 0].pred_proba.values
-    )
-    aux = X_hold.copy()
-    aux["real"] = y_hold.values
-    aux["pred"] = detector.model.predict(X_hold)
-    aux["pred_proba"] = detector.model.predict_proba(X_hold)[:, 1]
-    # aux["ood"] = z_hold_test.values
-    aux["ood_pred"] = detector.predict(X_hold)
-    # aux["ood_pred_proba"] = detector.predict_proba(X_hold_test)[:, 1]
-    print("Total flagged as OOD: ", aux[aux["ood_pred"] == 1].shape[0])
-    # auc_ood = roc_auc_score(aux.real, aux.pred_proba.values)
-
-    try:
-        decay = auc_id - auc_ood
-
-    except:
-        decay = 0
-    print("Decay", decay)
-    print("AUC ID", auc_id)
-    print("AUC OOD", auc_ood)
-
-# %%
-auc_id
 # %%
