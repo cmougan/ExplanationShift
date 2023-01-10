@@ -30,7 +30,7 @@ for datatype in tqdm(
         "ACSTravelTime",
     ]
 ):
-    for i in range(1, 10):
+    for i in tqdm(range(10)):
         data = GetData(type="real", datasets=datatype)
         X, y = data.get_state(state="CA", year="2014")
         # Hold out set for CA-14
@@ -48,7 +48,7 @@ for datatype in tqdm(
             )
 
             # Build detector
-            for space in ["explanation", "input", "prediction"]:
+            for space in ["input", "prediction", "explanation"]:
                 detector = ExplanationShiftDetector(
                     model=XGBClassifier(max_depth=3, random_state=i, verbosity=0),
                     gmodel=Pipeline(
@@ -79,13 +79,13 @@ for datatype in tqdm(
 
                 print(space, datatype, state, auc_hold)
                 # Analysis
-                X_ood_te_ = X_ood_te.copy()
-                X_ood_te_["pred"] = detector.predict_proba(X_ood_te)[:, 1]
-                X_ood_te_["y"] = y_ood_te
+                X_ood_te_ = X_cal_2.copy()
+                X_ood_te_["pred"] = detector.predict_proba(X_cal_2)[:, 1]
+                X_ood_te_["y"] = y_cal_2
 
                 for sort in [True, False]:
                     X_ood_te_ = X_ood_te_.sort_values("pred", ascending=sort)
-                    for N in [20_000, 5_000, 1_000, 500, 100]:
+                    for N in [45_000, 20_000, 5_000, 1_000, 500, 100]:
                         try:
                             auc_ood = roc_auc_score(
                                 X_ood_te_.head(N).y,
@@ -110,28 +110,13 @@ results_ = results_.pivot(
     index=["state", "dataset", "N", "i", "sort"], columns="space", values="auc_diff"
 ).reset_index()
 # %%
-results = results_[results_["N"] == 1_000]
+results = results_[results_["N"] == 20_000]
 # %%
 # Closer to 0 is better State
-results[results["sort"] == True].groupby(
-    ["dataset", "state", "i"]
-).mean().reset_index().drop(columns=["sort", "N"]).round(3).to_csv(
-    "results/results_low.csv"
-)  # .style.highlight_min(color="lightgreen", axis=1, subset=["explanation", "input", "prediction"])
 results[results["sort"] == True].groupby(
     ["dataset", "state"]
 ).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
     color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
 )
 
-# %%
-aux = results[results["sort"] == True]
-# %%
-aux.groupby(["state"]).mean().style.highlight_min(
-    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
-)
-# %%
-aux.groupby(["state"]).std().style.highlight_min(
-    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
-)
 # %%
