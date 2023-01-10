@@ -36,6 +36,8 @@ for datatype in tqdm(
 ):
     data = GetData(type="real", datasets=datatype)
     X, y = data.get_state(state="CA", year="2014")
+    sc = StandardScaler().fit(X)
+    X = pd.DataFrame(sc.transform(X), columns=X.columns)
     # Hold out set for CA-14
     X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
         X, y, test_size=0.5, stratify=y, random_state=0
@@ -44,6 +46,7 @@ for datatype in tqdm(
 
     for state in tqdm(states):
         X_ood, y_ood = data.get_state(state=state[:2], year="20" + state[2:], N=20_000)
+        X_ood = pd.DataFrame(sc.transform(X_ood), columns=X_ood.columns)
         X_ood, X_ood_te, y_ood, y_ood_te = train_test_split(
             X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=0
         )
@@ -51,15 +54,10 @@ for datatype in tqdm(
         # Build detector
         for space in ["explanation", "input", "prediction"]:
             detector = ExplanationShiftDetector(
-                model=XGBClassifier(max_depth=3, random_state=0, verbosity=0),
-                gmodel=Pipeline(
-                    [
-                        ("scaler", StandardScaler()),
-                        ("lr", LogisticRegression(penalty="l1", solver="liblinear")),
-                    ]
-                ),
+                gmodel=XGBClassifier(max_depth=3, random_state=0, verbosity=0),
+                model=LogisticRegression(random_state=0, max_iter=1000),
                 space=space,
-                masker=False,
+                masker=True,
             )
             if "label" in X_ood.columns:
                 X_ood = X_ood.drop(columns=["label"])
