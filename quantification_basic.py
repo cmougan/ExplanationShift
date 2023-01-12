@@ -24,42 +24,95 @@ from tools.explanationShift import ExplanationShiftDetector
 
 # %%
 res = []
-states = ["NY18", "TX18", "MI18", "MN18", "WI18", "FL18"]
+states = [
+    "AK",
+    "AL",
+    "AR",
+    "AZ",
+    "CA",
+    "CO",
+    "CT",
+    "DE",
+    "FL",
+    "GA",
+    "HI",
+    "IA",
+    "ID",
+    "IL",
+    "IN",
+    "KS",
+    "KY",
+    "LA",
+    "MA",
+    "MD",
+    "ME",
+    "MI",
+    "MN",
+    "MO",
+    "MS",
+    "MT",
+    "NC",
+    "ND",
+    "NE",
+    "NH",
+    "NJ",
+    "NM",
+    "NV",
+    "NY",
+    "OH",
+    "OK",
+    "OR",
+    "PA",
+    "RI",
+    "SC",
+    "SD",
+    "TN",
+    "TX",
+    "UT",
+    "VA",
+    "VT",
+    "WA",
+    "WI",
+    "WV",
+    "WY",
+]
+len(states)
+# %%
+
 for datatype in tqdm(
     [
-        "ACSTravelTime",
+        "ACSIncome",
     ]
 ):
-    for i in tqdm(range(10)):
-        data = GetData(type="real", datasets=datatype)
-        X, y = data.get_state(state="CA", year="2014")
-        # Hold out set for CA-14
-        X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
-            X, y, test_size=0.5, stratify=y, random_state=i
-        )
-        X, y = X_cal_1, y_cal_1
-
+    data = GetData(type="real", datasets=datatype)
+    X, y = data.get_state(state="CA", year="2014")
+    # Hold out set for CA-14
+    X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
+        X, y, test_size=0.5, stratify=y, random_state=0
+    )
+    X, y = X_cal_1, y_cal_1
+    for year in ["2018"]:
         for state in tqdm(states):
-            X_ood, y_ood = data.get_state(
-                state=state[:2], year="20" + state[2:], N=20_000
-            )
+            print(state)
+            X_ood, y_ood = data.get_state(state=state[:2], year=year)
             X_ood, X_ood_te, y_ood, y_ood_te = train_test_split(
-                X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=i
+                X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=0
             )
+            # Split the data into a holdout
+            X_cal_2["ood"] = 0
+            X_ood_te["ood"] = 1
+            X_cal_2["label"] = y_cal_2
+            X_ood_te["label"] = y_ood_te
+            X_hold = pd.concat([X_cal_2, X_ood_te])
+            y_hold = X_hold["label"]
+            y_hold_ood = X_hold["ood"]
+            X_hold = X_hold.drop(columns=["ood", "label"])
 
             # Build detector
             for space in ["input", "prediction", "explanation"]:
                 detector = ExplanationShiftDetector(
-                    model=XGBClassifier(max_depth=3, random_state=i, verbosity=0),
-                    gmodel=Pipeline(
-                        [
-                            ("scaler", StandardScaler()),
-                            (
-                                "lr",
-                                LogisticRegression(penalty="l1", solver="liblinear"),
-                            ),
-                        ]
-                    ),
+                    model=XGBClassifier(max_depth=3, random_state=0, verbosity=0),
+                    gmodel=LogisticRegression(random_state=0, max_iter=1000),
                     space=space,
                     masker=False,
                 )
@@ -67,56 +120,36 @@ for datatype in tqdm(
                     X_ood = X_ood.drop(columns=["label"])
                 detector.fit(X, y, X_ood)
 
-                # Performance of model on X_train hold out
-                auc_tr = roc_auc_score(
-                    y_cal_2, detector.model.predict_proba(X_cal_2)[:, 1]
-                )
-
                 # Performance of detector on X_ood hold out
                 auc_hold = roc_auc_score(
-                    y_ood_te, detector.model.predict_proba(X_ood_te)[:, 1]
+                    y_hold, detector.model.predict_proba(X_hold)[:, 1]
                 )
 
-                print(space, datatype, state, auc_hold)
-                # Analysis
-                X_ood_te_ = X_cal_2.copy()
-                X_ood_te_["pred"] = detector.predict_proba(X_cal_2)[:, 1]
-                X_ood_te_["y"] = y_cal_2
+                # Performance of G
+                auc_ood = roc_auc_score(
+                    y_hold_ood, detector.predict_proba(X_hold)[:, 1]
+                )
+                res.append([datatype, state, space, auc_hold, auc_ood])
 
-                for sort in [True, False]:
-                    X_ood_te_ = X_ood_te_.sort_values("pred", ascending=sort)
-                    for N in [45_000, 20_000, 5_000, 1_000, 500, 100]:
-                        try:
-                            auc_ood = roc_auc_score(
-                                X_ood_te_.head(N).y,
-                                detector.model.predict_proba(
-                                    X_ood_te_.head(N).drop(columns=["y", "pred"])
-                                )[:, 1],
-                            )
-                        except Exception as e:
-                            print(e)
-                            print("Value Error", N, space, datatype, state)
-                            auc_ood = 1
-                        res.append(
-                            [datatype, i, sort, N, space, state, auc_tr - auc_ood]
-                        )
 # %%
 results_ = pd.DataFrame(
-    res, columns=["dataset", "i", "sort", "N", "space", "state", "auc_diff"]
+    res, columns=["dataset", "state", "space", "auc_hold", "auc_ood"]
 )
 # %%
-# Convert results to table with State vs Space
-results_ = results_.pivot(
-    index=["state", "dataset", "N", "i", "sort"], columns="space", values="auc_diff"
-).reset_index()
-# %%
-results = results_[results_["N"] == 20_000]
-# %%
-# Closer to 0 is better State
-results[results["sort"] == True].groupby(
-    ["dataset", "state"]
-).mean().reset_index().drop(columns=["sort", "N"]).round(3).style.highlight_min(
-    color="lightgreen", axis=1, subset=["explanation", "input", "prediction"]
-)
+from scipy.stats import pearsonr
+import numpy as np
+from sklearn.metrics import r2_score
 
 # %%
+plt.figure(figsize=(10, 10))
+for space in ["input", "prediction", "explanation"]:
+    results = results_[results_["space"] == space]
+    print(space)
+    print(pearsonr(results["auc_hold"], results["auc_ood"]))
+    r2 = np.round(r2_score(results["auc_hold"], results["auc_ood"]), decimals=2)
+    print(r2)
+    plt.scatter(y=results["auc_hold"], x=results["auc_ood"], label=space + str(r2))
+plt.ylabel("AUC Hold")
+plt.xlabel("AUC OOD")
+
+plt.legend()
