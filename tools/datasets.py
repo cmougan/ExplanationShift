@@ -38,7 +38,7 @@ class GetData:
     X, y, X_ood, y_ood = data.get_data()
     """
 
-    def __init__(self, type: str = "blobs", N: int = 100000, datasets="ACSTravelTime"):
+    def __init__(self, type: str = "blobs", N: int = 1000000, datasets="ACSTravelTime"):
         self.type = type
         self.N = N
         self.X = None
