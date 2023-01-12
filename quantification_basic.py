@@ -1,5 +1,6 @@
 # %%
 import matplotlib.pyplot as plt
+import numpy as np
 
 plt.rcParams.update({"font.size": 14})
 plt.style.use("seaborn-whitegrid")
@@ -14,6 +15,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.preprocessing import StandardScaler
 from tools.explanationShift import ExplanationShiftDetector
+from sklearn.metrics import r2_score
 
 # External Libraries
 from xgboost import XGBClassifier
@@ -86,6 +88,9 @@ for datatype in tqdm(
 ):
     data = GetData(type="real", datasets=datatype)
     X, y = data.get_state(state="CA", year="2014")
+    sc = StandardScaler()
+    sc.fit(X)
+    X = pd.DataFrame(sc.transform(X), columns=X.columns)
     # Hold out set for CA-14
     X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
         X, y, test_size=0.5, stratify=y, random_state=0
@@ -94,7 +99,8 @@ for datatype in tqdm(
     for year in ["2018"]:
         for state in tqdm(states):
             print(state)
-            X_ood, y_ood = data.get_state(state=state[:2], year=year)
+            X_ood, y_ood = data.get_state(state=state[:2], year=year, N=20_000)
+            X_ood = pd.DataFrame(sc.transform(X_ood), columns=X_ood.columns)
             X_ood, X_ood_te, y_ood, y_ood_te = train_test_split(
                 X_ood, y_ood, test_size=0.5, stratify=y_ood, random_state=0
             )
@@ -112,14 +118,9 @@ for datatype in tqdm(
             for space in ["input", "prediction", "explanation"]:
                 detector = ExplanationShiftDetector(
                     model=XGBClassifier(max_depth=3, random_state=0, verbosity=0),
-                    gmodel=Pipeline(
-                        [
-                            ("scaler", StandardScaler()),
-                            ("clf", LogisticRegression(random_state=0, max_iter=1000)),
-                        ]
-                    ),
+                    gmodel=LogisticRegression(random_state=0, max_iter=1000),
                     space=space,
-                    masker=False,
+                    masker=True,
                 )
                 if "label" in X_ood.columns:
                     X_ood = X_ood.drop(columns=["label"])
@@ -146,27 +147,14 @@ for datatype in tqdm(
 results_ = pd.DataFrame(
     res, columns=["dataset", "state", "space", "auc_hold", "auc_ood"]
 )
-results_["space"] = np.where(results_.space == "space", "atc", results_.space)
-# %%
-from scipy.stats import pearsonr
-import numpy as np
-from sklearn.metrics import r2_score
-
 # %%
 plt.figure(figsize=(10, 10))
-for space in ["input", "prediction", "explanation", "atc"]:
+for space in ["explanation", "input", "prediction", "atc"]:
     results = results_[results_["space"] == space]
-    print(space)
-    print(pearsonr(results["auc_hold"], results["auc_ood"]))
     r2 = np.round(r2_score(results["auc_hold"], results["auc_ood"]), decimals=2)
-    print(r2)
-    plt.scatter(y=results["auc_hold"], x=results["auc_ood"], label=space + str(r2))
+    label = space + " R2: " + str(r2)
+    plt.scatter(y=results["auc_hold"], x=results["auc_ood"], label=label)
 plt.ylabel("AUC Hold")
 plt.xlabel("AUC OOD")
 
 plt.legend()
-
-# %%
-# Replace where it say "space" with "atc"
-np.where(results_.space == "space", "atc", results_.space)
-# %%
