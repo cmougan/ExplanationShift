@@ -11,7 +11,7 @@ random.seed(0)
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.preprocessing import StandardScaler
 from tools.explanationShift import ExplanationShiftDetector
 
@@ -21,6 +21,7 @@ from tqdm import tqdm
 
 from tools.datasets import GetData
 from tools.explanationShift import ExplanationShiftDetector
+from tools.ATC import ATC
 
 # %%
 res = []
@@ -78,7 +79,6 @@ states = [
 ]
 len(states)
 # %%
-
 for datatype in tqdm(
     [
         "ACSIncome",
@@ -112,7 +112,12 @@ for datatype in tqdm(
             for space in ["input", "prediction", "explanation"]:
                 detector = ExplanationShiftDetector(
                     model=XGBClassifier(max_depth=3, random_state=0, verbosity=0),
-                    gmodel=LogisticRegression(random_state=0, max_iter=1000),
+                    gmodel=Pipeline(
+                        [
+                            ("scaler", StandardScaler()),
+                            ("clf", LogisticRegression(random_state=0, max_iter=1000)),
+                        ]
+                    ),
                     space=space,
                     masker=False,
                 )
@@ -121,9 +126,8 @@ for datatype in tqdm(
                 detector.fit(X, y, X_ood)
 
                 # Performance of detector on X_ood hold out
-                auc_hold = roc_auc_score(
-                    y_hold, detector.model.predict_proba(X_hold)[:, 1]
-                )
+                # auc_hold = roc_auc_score(y_hold, detector.model.predict_proba(X_hold)[:, 1])
+                auc_hold = accuracy_score(y_hold, detector.model.predict(X_hold))
 
                 # Performance of G
                 auc_ood = roc_auc_score(
@@ -131,10 +135,18 @@ for datatype in tqdm(
                 )
                 res.append([datatype, state, space, auc_hold, auc_ood])
 
+            # ATC
+            atc = ATC()
+            atc.fit(detector.model.predict_proba(X), y)
+            auc_ood = atc.predict(detector.model.predict_proba(X_hold)) / 100
+            res.append([datatype, state, "atc", auc_hold, auc_ood])
+
+
 # %%
 results_ = pd.DataFrame(
     res, columns=["dataset", "state", "space", "auc_hold", "auc_ood"]
 )
+results_["space"] = np.where(results_.space == "space", "atc", results_.space)
 # %%
 from scipy.stats import pearsonr
 import numpy as np
@@ -142,7 +154,7 @@ from sklearn.metrics import r2_score
 
 # %%
 plt.figure(figsize=(10, 10))
-for space in ["input", "prediction", "explanation"]:
+for space in ["input", "prediction", "explanation", "atc"]:
     results = results_[results_["space"] == space]
     print(space)
     print(pearsonr(results["auc_hold"], results["auc_ood"]))
@@ -153,3 +165,8 @@ plt.ylabel("AUC Hold")
 plt.xlabel("AUC OOD")
 
 plt.legend()
+
+# %%
+# Replace where it say "space" with "atc"
+np.where(results_.space == "space", "atc", results_.space)
+# %%
