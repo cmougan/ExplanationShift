@@ -27,6 +27,8 @@ d = {
     "RAC1P": "Race",
     "AGEP": "Age",
     "POWPUMA": "WorkPlace",
+    "SEX": "Sex",
+    "RELP": "Relationship",
 }
 
 

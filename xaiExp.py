@@ -26,8 +26,10 @@ from tools.datasets import GetData
 from tools.explanationShift import ExplanationShiftDetector
 
 # %%
+# Number of bootstrap samples
+N_b = 20
 data = GetData(type="real")
-X, y, X_ood, y_ood = data.get_data()
+X, y = data.get_state(state="CA", year="2014")
 # Hold out set for CA-14
 X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
     X, y, test_size=0.5, stratify=y, random_state=0
@@ -46,7 +48,7 @@ detector = ExplanationShiftDetector(
 # %% Build AUC interval
 aucs = []
 cofs = []
-for i in tqdm(range(100)):
+for i in tqdm(range(N_b)):
     X_tr, X_te, y_tr, y_te = train_test_split(
         X, y, test_size=0.5, stratify=y, random_state=i
     )
@@ -58,12 +60,12 @@ for i in tqdm(range(100)):
 ood_auc = {}
 ood_coefs = {}
 # states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18", "CA18", "CA14"]
-states = ["NY18", "TX18", "HI18", "MI18", "PR18", "CA18"]
+states = ["NY18", "TX18", "HI18", "KS18", "MN18", "PR18", "CA18"]
 for state in tqdm(states):
     X_ood_, _ = data.get_state(state=state[:2], year="20" + state[2:])
     ood_temp = []
     ood_coefs_temp = pd.DataFrame(columns=X.columns)
-    for i in range(100):
+    for i in range(N_b):
         X_ood = X_ood_.sample(frac=0.632, replace=True)
         detector.fit(X, y, X_ood)
         ood_temp.append(detector.get_auc_val())
@@ -84,9 +86,10 @@ plt.figure(figsize=(10, 6))
 plt.title("AUC OOD performance of the Explanation Shift detector")
 plt.ylabel("AUC")
 sns.kdeplot(aucs, fill=True, label="In-Distribution (CA14)")
-colors = ["#00BFFF", "#C68E17", "#7DFDFE", "#6F4E37", "#EB5406", "#8E7618", "r", "g"]
+colors = ["#00BFFF", "#C68E17", "#7DFDFE", "#6F4E37", "#EB5406", "r", "g", "k"]
 for i, state in enumerate(states):
     # plt.axvline(np.mean(ood_auc[state]), label=state, color=colors[i])
+    print(state, colors[i])
     sns.kdeplot(ood_auc[state], label=state, color=colors[i], fill=True)
 # plt.axvline(hold_auc, label="CA-14 (Hold Out)")
 plt.legend()
@@ -125,10 +128,14 @@ from matplotlib.colors import LogNorm
 plt.figure(figsize=(10, 6))
 plt.title("Feature importance of the Explanation Shift detector (Wasserstein)")
 sns.heatmap(
-    coefs_res.sort_values(by="mean", ascending=False).drop("State", axis=0),
+    coefs_res.sort_values(by="mean", ascending=False),
     annot=True,
     norm=LogNorm(),
 )
 plt.tight_layout()
 plt.savefig("images/feature_importance.png")
 plt.show()
+
+# %%
+X
+# %%
