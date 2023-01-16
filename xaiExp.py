@@ -1,5 +1,4 @@
 # %%
-import numpy as np
 import matplotlib.pyplot as plt
 
 plt.rcParams.update({"font.size": 14})
@@ -28,7 +27,14 @@ from tools.explanationShift import ExplanationShiftDetector
 # %%
 # Number of bootstrap samples
 N_b = 20
-data = GetData(type="real")
+datasets = "ACSPublicCoverage"
+data = GetData(type="real", datasets=datasets)
+# ACSTravelTime,
+# ACSEmployment,
+# ACSIncome,
+# ACSMobility,
+# ACSPublicCoverage,
+
 X, y = data.get_state(state="CA", year="2014")
 # Hold out set for CA-14
 X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
@@ -94,7 +100,7 @@ for i, state in enumerate(states):
 # plt.axvline(hold_auc, label="CA-14 (Hold Out)")
 plt.legend()
 plt.tight_layout()
-plt.savefig("images/AUC_OOD.png")
+plt.savefig("images/AUC_OOD_{}.png".format(datasets))
 plt.show()
 # %%
 # Analysis of performance of G
@@ -133,9 +139,5 @@ sns.heatmap(
     norm=LogNorm(),
 )
 plt.tight_layout()
-plt.savefig("images/feature_importance.png")
+plt.savefig("images/feature_importance_{}.png".format(datasets))
 plt.show()
-
-# %%
-X
-# %%
