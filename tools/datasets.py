@@ -29,6 +29,13 @@ d = {
     "POWPUMA": "WorkPlace",
     "SEX": "Sex",
     "RELP": "Relationship",
+    "POBP": "PlaceOfBirth",
+    "ANC": "Ancestry",
+    "MIL": "Military",
+    "DEYE": "VisionDiff",
+    "DEAR": "EaringDiff",
+    "DREAM": "CognitiveDiff",
+    "ESR": "EmploymentStatus",
 }
 
 
