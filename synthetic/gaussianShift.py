@@ -25,8 +25,6 @@ import shap
 
 import sys
 
-sys.path.append("../")
-from tools.explanationShift import ShapEstimator
 
 # %%
 ## Sensitivity experiment
@@ -170,7 +168,7 @@ for rho in iters:
     """
 # %%
 plt.figure()
-plt.title("Sensitivity to Multivariate Shift")
+plt.title("Sensitivity to Multicovariate Shift")
 plt.plot(iters, res_exp, label="Explanation Space")
 plt.plot(iters, res_inp, label="Input Space")
 plt.plot(iters, res_out, label="Output Space")
