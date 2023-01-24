@@ -27,19 +27,28 @@ The experimental section is divided into two main parts. Experiments with synthe
 - `xaiExp.py` Produces the images on the paper. If added the argument ACSIncome, ACSEmployment ... Changes the prediction task.
 
 ## How it works
-
+Importing libraries
 ```python
 from sklearn.datasets import make_blobs
 from xgboost import XGBRegressor
 from sklearn.linear_model import LogisticRegression
 from tools.xaiUtils import ExplanationShiftDetector
+```
 
+Synthetic ID and OOD data.
+```python
 X, y = make_blobs(n_samples=2000, centers=2, n_features=5, random_state=0)
 X_ood, _ = make_blobs(n_samples=1000, centers=1, n_features=5, random_state=0)
-# %%
+```
+
+Fit Explanation Shift Detector where the classifier is a Gradient Boosting Decision Tree and the Detector a logistic regression
+```python
 detector = ExplanationShiftDetector(model=XGBRegressor(), gmodel=LogisticRegression())
+
 detector.fit(X, y,X_ood)
-# %%
+```
+If the AUC is above 0.5 then we can expect and change on the model predictions.
+```python
 detector.get_auc_val()
-# %%
+# 0.70
 ```
