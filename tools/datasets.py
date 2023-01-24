@@ -47,7 +47,9 @@ class GetData:
     X, y, X_ood, y_ood = data.get_data()
     """
 
-    def __init__(self, type: str = "blobs", N: int = 1000000, datasets="ACSTravelTime"):
+    def __init__(
+        self, type: str = "blobs", N: int = 1000000, datasets="ACSTravelTime", verbose=0
+    ):
         self.type = type
         self.N = N
         self.X = None
@@ -72,6 +74,8 @@ class GetData:
             self.dataset = ACSMobility
         elif datasets == "ACSPublicCoverage":
             self.dataset = ACSPublicCoverage
+        else:
+            raise ValueError("Dataset not supported")
 
     def get_data(self):
         if self.type == "blobs":
@@ -147,7 +151,9 @@ class GetData:
 
         return self.X, self.y, self.X_ood, self.y_ood
 
-    def get_state(self, year: str = "2014", state: str = "NY", N: int = 100000):
+    def get_state(
+        self, year: str = "2014", state: str = "NY", N: int = 100000, verbose=0
+    ):
         self.N = N
         # OOD data
         data_source = ACSDataSource(survey_year=year, horizon="1-Year", survey="person")

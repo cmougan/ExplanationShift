@@ -28,17 +28,10 @@ from tools.explanationShift import ExplanationShiftDetector
 # %%
 # Number of bootstrap samples
 N_b = 20
-data = GetData()
-try:
-    dataset = sys.argv[1]
-    X, y = data.get_state(year=2014, state="CA", verbose=True, datasets=dataset)
-except Exception as e:
-    # Print error
-    print("Error:", e)
-    print("No dataset specified, using ACSIncome")
-    dataset = "ACSIncome"
-    X, y = data.get_state(year=2014, state="CA", verbose=True, datasets=dataset)
-print("Dataset:", dataset)
+datasets = sys.argv[1]
+data = GetData(datasets=datasets)
+X, y = data.get_state(year=2014, state="CA", verbose=True)
+print("Dataset:", datasets)
 
 
 # Hold out set for CA-14
@@ -73,7 +66,7 @@ ood_coefs = {}
 # states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18", "CA18", "CA14"]
 states = ["NY18", "TX18", "HI18", "KS18", "MN18", "PR18", "CA18"]
 for state in tqdm(states):
-    X_ood_, _ = data.get_state(state=state[:2], year="20" + state[2:], datasets=dataset)
+    X_ood_, _ = data.get_state(state=state[:2], year="20" + state[2:])
     ood_temp = []
     ood_coefs_temp = pd.DataFrame(columns=X.columns)
     for i in range(N_b):
@@ -106,7 +99,7 @@ for i, state in enumerate(states):
 plt.legend()
 plt.tight_layout()
 plt.savefig("images/AUC_OOD_{}.png".format(datasets))
-plt.show()
+plt.close()
 # %%
 # Analysis of performance of G
 #  This is a p-value
@@ -150,4 +143,4 @@ sns.heatmap(
 )
 plt.tight_layout()
 plt.savefig("images/feature_importance_{}.png".format(datasets))
-plt.show()
+plt.close()
