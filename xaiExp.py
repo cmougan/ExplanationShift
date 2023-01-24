@@ -1,5 +1,6 @@
 # %%
 import matplotlib.pyplot as plt
+import sys
 
 plt.rcParams.update({"font.size": 14})
 import seaborn as sns
@@ -27,15 +28,19 @@ from tools.explanationShift import ExplanationShiftDetector
 # %%
 # Number of bootstrap samples
 N_b = 20
-datasets = "ACSPublicCoverage"
-data = GetData(type="real", datasets=datasets)
-# ACSTravelTime,
-# ACSEmployment,
-# ACSIncome,
-# ACSMobility,
-# ACSPublicCoverage,
+data = GetData()
+try:
+    dataset = sys.argv[1]
+    X, y = data.get_state(year=2014, state="CA", verbose=True, datasets=dataset)
+except Exception as e:
+    # Print error
+    print("Error:", e)
+    print("No dataset specified, using ACSIncome")
+    dataset = "ACSIncome"
+    X, y = data.get_state(year=2014, state="CA", verbose=True, datasets=dataset)
+print("Dataset:", dataset)
 
-X, y = data.get_state(state="CA", year="2014")
+
 # Hold out set for CA-14
 X_cal_1, X_cal_2, y_cal_1, y_cal_2 = train_test_split(
     X, y, test_size=0.5, stratify=y, random_state=0
@@ -68,7 +73,7 @@ ood_coefs = {}
 # states = ["NY14", "TX14", "HI14", "NY18", "TX18", "HI18", "CA18", "CA14"]
 states = ["NY18", "TX18", "HI18", "KS18", "MN18", "PR18", "CA18"]
 for state in tqdm(states):
-    X_ood_, _ = data.get_state(state=state[:2], year="20" + state[2:])
+    X_ood_, _ = data.get_state(state=state[:2], year="20" + state[2:], datasets=dataset)
     ood_temp = []
     ood_coefs_temp = pd.DataFrame(columns=X.columns)
     for i in range(N_b):
@@ -126,7 +131,9 @@ for i, state in enumerate(states):
         )
 
 # %%
+# Means on both axis
 coefs_res["mean"] = coefs_res.mean(axis=1)
+coefs_res.loc["mean"] = coefs_res.mean(axis=0)
 coefs_res.sort_values(by="mean", ascending=True)
 # %%
 from matplotlib.colors import LogNorm
@@ -134,7 +141,10 @@ from matplotlib.colors import LogNorm
 plt.figure(figsize=(10, 6))
 plt.title("Feature importance of the Explanation Shift detector (Wasserstein)")
 sns.heatmap(
-    coefs_res.sort_values(by="mean", ascending=False),
+    coefs_res.sort_values(by="mean", ascending=False, axis=0)
+    .sort_values(by="mean", ascending=False, axis=1)
+    .drop(["mean"], axis=1)
+    .drop(["mean"], axis=0),
     annot=True,
     norm=LogNorm(),
 )
