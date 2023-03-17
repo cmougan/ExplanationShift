@@ -32,7 +32,7 @@ Importing libraries
 from sklearn.datasets import make_blobs
 from xgboost import XGBRegressor
 from sklearn.linear_model import LogisticRegression
-from tools.xaiUtils import ExplanationShiftDetector
+from nobias import ExplanationShiftDetector
 ```
 
 Synthetic ID and OOD data.
