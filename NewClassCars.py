@@ -53,7 +53,8 @@ for cat in [0, 1, 2, 3]:
         n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
         n_samples_1 = n_samples
 
-        X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(10).index)]
+        X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
+        print(X_.shape)
         X_new = X_te.sample(n_samples, replace=False).append(X_)
 
         detector.fit(X_tr, y_tr, X_new)
@@ -81,7 +82,7 @@ for cat in [0, 1, 2, 3]:
     plt.plot(params, aucs[cat], label=label)
 plt.xlabel("Fraction of OOD data")
 plt.ylabel("AUC of Explanation Shift Detector")
-plt.savefig("images/PUshift.png")
+plt.savefig("images/NewClass.png")
 plt.legend()
 
 # %%
