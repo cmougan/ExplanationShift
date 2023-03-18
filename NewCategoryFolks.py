@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+from scipy.stats import wasserstein_distance
 
 plt.style.use("seaborn-whitegrid")
 rcParams["axes.labelsize"] = 14
@@ -17,6 +18,7 @@ from nobias import ExplanationShiftDetector
 from xgboost import XGBRegressor, XGBClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
+from tqdm import tqdm
 
 
 # %%
@@ -34,7 +36,7 @@ df["y"] = y
 
 
 aucs = {}
-for r in [2, 6, 8, 9]:
+for r in [2, 3, 6, 8, 9]:
     df_tr = df[df["Race"] != r]
     # Train test split
     X_tr, X_te, y_tr, y_te = train_test_split(
@@ -47,10 +49,10 @@ for r in [2, 6, 8, 9]:
     )
 
     # Concatenate the training and validation sets
-    params = np.linspace(0.1, 0.99, 10)
+    params = np.linspace(0.05, 0.99, 50)
 
     aucs_temp = []
-    for i in params:
+    for i in tqdm(params):
         n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
         n_samples_1 = n_samples
 
@@ -64,10 +66,12 @@ for r in [2, 6, 8, 9]:
 # %%
 # Plot
 plt.figure()
-for r in [2, 6, 8, 9]:
+for r in [2, 3, 6, 8, 9]:
     # TODO: Rename labels with te
     if r == 2:
         label = "Black"
+    elif r == 3:
+        label = "Am-Indian"
     elif r == 6:
         label = "Asian"
     elif r == 8:
@@ -76,9 +80,12 @@ for r in [2, 6, 8, 9]:
         label = "Mixed"
 
     plt.plot(params, aucs[r], label=label)
+    ci = 1.96 * np.std(aucs[r]) / np.sqrt(len(params))
+
+    plt.fill_between(params, (aucs[r] - ci), (aucs[r] + ci), alpha=0.1)
 plt.xlabel("Fraction of OOD data")
 plt.ylabel("AUC of Explanation Shift Detector")
-plt.savefig("images/NewCategory.png")
+plt.savefig("images/NewCategory.pdf", bbox_inches='tight')
 plt.legend()
 
 
@@ -94,15 +101,13 @@ asian_preds = detector.model.predict_proba(
 other_preds = detector.model.predict_proba(
     df[df["Race"] == 8].drop(columns=["y", "Race"])
 )[:, 1]
-sns.kdeplot(all_preds, label="All")
-sns.kdeplot(black_preds, label="Black")
-sns.kdeplot(asian_preds, label="Asian")
-sns.kdeplot(other_preds, label="Other")
-# %%
-from scipy.stats import wasserstein_distance
-
-# %%
+mixed_preds = detector.model.predict_proba(
+    df[df["Race"] == 9].drop(columns=["y", "Race"])
+)[:, 1]
 # Demographic Parity
 print("Black:", wasserstein_distance(all_preds, black_preds))
 print("Asian:", wasserstein_distance(all_preds, asian_preds))
 print("Other:", wasserstein_distance(all_preds, other_preds))
+print("Mixed:", wasserstein_distance(all_preds, mixed_preds))
+
+# %%
