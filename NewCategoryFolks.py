@@ -29,7 +29,7 @@ data = GetData(type="blobs")
 X, y, X_ood, y_ood = data.get_data()
 # %%
 data = GetData(type="real", datasets="ACSIncome")
-X, y = data.get_state(state="CA", year="2018", N=20_000)
+X, y = data.get_state(state="CA", year="2018", N=200_000)
 # %%
 df = X.copy()
 df["y"] = y
@@ -65,7 +65,7 @@ for r in [2, 3, 6, 8, 9]:
     aucs[r] = aucs_temp
 # %%
 # Plot
-plt.figure()
+plt.figure(figsize=(10, 6))
 for r in [2, 3, 6, 8, 9]:
     # TODO: Rename labels with te
     if r == 2:
@@ -85,8 +85,8 @@ for r in [2, 3, 6, 8, 9]:
     plt.fill_between(params, (aucs[r] - ci), (aucs[r] + ci), alpha=0.1)
 plt.xlabel("Fraction of OOD data")
 plt.ylabel("AUC of Explanation Shift Detector")
-plt.savefig("images/NewCategory.pdf", bbox_inches='tight')
 plt.legend()
+plt.savefig("images/NewCategory.pdf", bbox_inches="tight")
 
 
 # %%
