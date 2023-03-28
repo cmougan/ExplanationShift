@@ -61,14 +61,14 @@ for i in tqdm(params):
         model=XGBClassifier(), gmodel=LogisticRegression()
     )
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
-    aucs_xgb.append(detector.get_auc_val())
+    aucs_xgb.append(2 * detector.get_auc_val() - 1)
 
     # Explanation Shift Log
     detector = ExplanationShiftDetector(
         model=LogisticRegression(), gmodel=XGBClassifier(), masker=True
     )
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
-    aucs_log.append(detector.get_auc_val())
+    aucs_log.append(2 * detector.get_auc_val() - 1)
 
     # Classifier Drift
     classDrift = ClassifierDrift(
@@ -89,40 +89,32 @@ plt.figure(figsize=(10, 6))
 
 # XGB AUC
 plt.plot(params, aucs_xgb, label="Exp. Shift XGB", color="blue")
-ci = 1.96 * np.std(aucs_xgb) / np.sqrt(len(params))
-plt.fill_between(params, (aucs_xgb - ci), (aucs_xgb + ci), alpha=0.1)
+# ci = 1.96 * np.std(aucs_xgb) / np.sqrt(len(params))
+# plt.fill_between(params, (aucs_xgb - ci), (aucs_xgb + ci), alpha=0.1)
 
 # Log AUC
 plt.plot(
     params, aucs_log, label="Exp. Shift Log", color="blue", linestyle=":", marker="o"
 )
-ci = 1.96 * np.std(aucs_log) / np.sqrt(len(params))
-plt.fill_between(params, (aucs_log - ci), (aucs_log + ci), alpha=0.1)
 
 # Input KS Test
 plt.plot(params, input_ks, label="KS-Test XGB", color="green")
 plt.plot(
-    params, input_ks, label="KS-Test Log", color="green", linestyle=":", marker="o"
+    params, input_ks, label="KS-Test Log", color="lime", linestyle="None", marker="o"
 )
-ci = 1.96 * np.std(input_ks) / np.sqrt(len(params))
-plt.fill_between(params, (input_ks - ci), (input_ks + ci), alpha=0.1)
 
 # Classifier Drift
 plt.plot(params, input_classDrift, label="Classifier Drift - XGB", color="orange")
-ci = 1.96 * np.std(input_classDrift) / np.sqrt(len(params))
-plt.fill_between(params, (input_classDrift - ci), (input_classDrift + ci), alpha=0.1)
 
 # Classifier Drift
 plt.plot(
     params,
     input_classDrift,
     label="Classifier Drift - Log",
-    color="orange",
-    linestyle=":",
+    color="peru",
+    linestyle="None",
     marker="o",
 )
-ci = 1.96 * np.std(input_classDrift) / np.sqrt(len(params))
-plt.fill_between(params, (input_classDrift - ci), (input_classDrift2 + ci), alpha=0.1)
 
 
 plt.xlabel("Fraction of OOD data")
