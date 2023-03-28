@@ -174,3 +174,49 @@ print("Other:", wasserstein_distance(all_preds, other_preds))
 print("Mixed:", wasserstein_distance(all_preds, mixed_preds))
 
 # %%
+# Large Benchmark
+
+
+i = 0.5
+n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
+n_samples_1 = n_samples
+
+X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
+X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
+
+# Explanation Shift XGB
+# Loop over all estimators
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+
+list_estimator = [
+    XGBClassifier(),
+    LogisticRegression(),
+    SVC(probability=True),
+    RandomForestClassifier(),
+    KNeighborsClassifier(),
+    DecisionTreeClassifier(),
+    MLPClassifier(),
+]
+res = pd.DataFrame(index=range(len(list_estimator)), columns=range(len(list_estimator)))
+for i, estimator in enumerate(list_estimator):
+    for j, gmodel in enumerate(list_estimator):
+        detector = ExplanationShiftDetector(model=estimator, gmodel=gmodel, masker=True)
+        try:
+            detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
+
+            value = detector.get_auc_val()
+            res.at[i, j] = value
+        except:
+            res.at[i, j] = np.nan
+            print("Error")
+            print("Estimator: ", estimator.__class__.__name__)
+            print("Detector: ", gmodel.__class__.__name__)
+
+# %%
+estimator.__class__.__name__
+# %%
