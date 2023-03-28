@@ -88,32 +88,61 @@ for i in tqdm(params):
 plt.figure(figsize=(10, 6))
 
 # XGB AUC
-plt.plot(params, aucs_xgb, label="Exp. Shift XGB", color="blue")
+plt.plot(params, aucs_xgb, label="Exp. Shift XGB", color="darkblue", linewidth=2)
 # ci = 1.96 * np.std(aucs_xgb) / np.sqrt(len(params))
 # plt.fill_between(params, (aucs_xgb - ci), (aucs_xgb + ci), alpha=0.1)
 
 # Log AUC
+linewidth = 3
+alpha = 0.2
 plt.plot(
-    params, aucs_log, label="Exp. Shift Log", color="blue", linestyle=":", marker="o"
+    params,
+    aucs_log,
+    label="Exp. Shift Log",
+    color="lightblue",
+    linestyle=":",
+    marker="o",
+    linewidth=2,
 )
 
 # Input KS Test
-plt.plot(params, input_ks, label="KS-Test XGB", color="green")
 plt.plot(
-    params, input_ks, label="KS-Test Log", color="lime", linestyle="None", marker="o"
+    params,
+    input_ks,
+    label="KS-Test XGB",
+    color="darkgreen",
+    linewidth=linewidth,
+    alpha=alpha,
+)
+plt.plot(
+    params,
+    input_ks,
+    label="KS-Test Log",
+    color="lightgreen",
+    linestyle="None",
+    marker="o",
+    linewidth=linewidth,
 )
 
 # Classifier Drift
-plt.plot(params, input_classDrift, label="Classifier Drift - XGB", color="orange")
+plt.plot(
+    params,
+    input_classDrift,
+    label="Classifier Drift - XGB",
+    color="crimson",
+    linewidth=linewidth,
+    alpha=alpha,
+)
 
 # Classifier Drift
 plt.plot(
     params,
     input_classDrift,
     label="Classifier Drift - Log",
-    color="peru",
+    color="lightcoral",
     linestyle="None",
     marker="o",
+    linewidth=linewidth,
 )
 
 
@@ -121,7 +150,7 @@ plt.xlabel("Fraction of OOD data")
 plt.ylabel("OOD Metrics")
 plt.legend()
 plt.savefig("images/NewCategoryBenchmark.pdf", bbox_inches="tight")
-
+# %%
 
 # %%
 # Some Fariness metrics
