@@ -180,20 +180,30 @@ print("Mixed:", wasserstein_distance(all_preds, mixed_preds))
 i = 0.5
 n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
 n_samples_1 = n_samples
+params = np.linspace(0.05, 0.99, 5)
 
 X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
 X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
 
 # Explanation Shift XGB
 # Loop over all estimators
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neural_network import MLPClassifier
+from sklearn.linear_model import LogisticRegression, Lasso, Ridge
+from sklearn.svm import SVC, SVR
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
+from sklearn.neural_network import MLPRegressor, MLPClassifier
 
 list_estimator = [
+    XGBClassifier(),
+    LogisticRegression(),
+    Lasso(),
+    Ridge(),
+    RandomForestRegressor(),
+    DecisionTreeRegressor(),
+    MLPRegressor(),
+]
+list_detector = [
     XGBClassifier(),
     LogisticRegression(),
     SVC(probability=True),
@@ -202,21 +212,27 @@ list_estimator = [
     DecisionTreeClassifier(),
     MLPClassifier(),
 ]
+
 res = pd.DataFrame(index=range(len(list_estimator)), columns=range(len(list_estimator)))
-for i, estimator in enumerate(list_estimator):
-    for j, gmodel in enumerate(list_estimator):
+for i, estimator in tqdm(enumerate(list_estimator)):
+    for j, gmodel in enumerate(list_detector):
         detector = ExplanationShiftDetector(model=estimator, gmodel=gmodel, masker=True)
         try:
             detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
 
             value = detector.get_auc_val()
             res.at[i, j] = value
-        except:
+        # Catch errors and print
+        except Exception as e:
+            print(e)
             res.at[i, j] = np.nan
             print("Error")
             print("Estimator: ", estimator.__class__.__name__)
             print("Detector: ", gmodel.__class__.__name__)
 
 # %%
-estimator.__class__.__name__
+res.index = [estimator.__class__.__name__ for estimator in list_estimator]
+res.columns = [estimator.__class__.__name__ for estimator in list_estimator]
+# %%
+res.dropna().astype(float).round(3).to_csv("results/ExplanationShift.csv")
 # %%
