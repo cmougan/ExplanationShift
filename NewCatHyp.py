@@ -16,6 +16,7 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from nobias import ExplanationShiftDetector
 from xgboost import XGBRegressor, XGBClassifier
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
@@ -50,10 +51,10 @@ X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
 # %%
 # XGB
 xgb_list = []
-xgb_param = np.linspace(1, 50, 10)
+xgb_param = np.linspace(1, 10, 10)
 for i in xgb_param:
     detector = ExplanationShiftDetector(
-        model=XGBClassifier(max_depth=int(i)), gmodel=LogisticRegression()
+        model=XGBClassifier(n_estimators=int(i)), gmodel=LogisticRegression()
     )
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
 
@@ -65,7 +66,7 @@ for i in xgb_param:
 dt_list = []
 dt_param = np.linspace(1, 10, 9)
 for i in dt_param:
-    detector = detector = ExplanationShiftDetector(
+    detector = ExplanationShiftDetector(
         model=DecisionTreeRegressor(max_depth=int(i)), gmodel=LogisticRegression()
     )
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
@@ -73,14 +74,41 @@ for i in dt_param:
     value = detector.get_auc_val()
     dt_list.append(value)
 # %%
+# Random Forest
+rf_list = []
+rf_param = np.linspace(1, 10, 10)
+for i in rf_param:
+    detector = ExplanationShiftDetector(
+        model=RandomForestRegressor(n_estimators=int(i),max_features=int(i)), gmodel=LogisticRegression()
+    )
+
+    detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
+
+    value = detector.get_auc_val()
+    rf_list.append(value)
+
+
+# %%
 # Plot
 plt.figure(figsize=(10, 8))
+# XGB
 plt.plot(xgb_param, xgb_list, label="XGB")
+ci = 1.96 * np.std(xgb_list) / np.sqrt(len(xgb_param))
+plt.fill_between(xgb_param, (xgb_list - ci), (xgb_list + ci), alpha=0.1)
+
+# DT
 plt.plot(dt_param, dt_list, label="Decision Tree")
-plt.xlabel("Max Depth")
-plt.ylabel("AUC")
+ci = 1.96 * np.std(dt_list) / np.sqrt(len(dt_param))
+plt.fill_between(dt_param, (dt_list - ci), (dt_list + ci), alpha=0.1)
+
+# RF
+plt.plot(rf_param, rf_list, label="Random Forest")
+ci = 1.96 * np.std(rf_list) / np.sqrt(len(rf_param))
+plt.fill_between(rf_param, (rf_list - ci), (rf_list + ci), alpha=0.1)
+
+plt.xlabel("Max Depth/Hyperparameter")
+plt.ylabel("Explanation Shift AUC")
 plt.legend()
+plt.savefig("images/NewCategoryHyper.pdf", bbox_inches="tight")
 plt.show()
-
-
 # %%
