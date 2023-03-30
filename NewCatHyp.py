@@ -39,8 +39,6 @@ X_tr, X_te, y_tr, y_te = train_test_split(
 )
 X_ood = df[df["Race"] == r].drop("y", axis=1)
 
-detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegression())
-
 
 i = 0.5
 n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
@@ -54,7 +52,8 @@ xgb_list = []
 xgb_param = np.linspace(1, 10, 10)
 for i in xgb_param:
     detector = ExplanationShiftDetector(
-        model=XGBClassifier(n_estimators=int(i)), gmodel=LogisticRegression()
+        model=XGBClassifier(n_estimators=int(i), max_depth=int(i)),
+        gmodel=LogisticRegression(),
     )
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
 
@@ -79,7 +78,8 @@ rf_list = []
 rf_param = np.linspace(1, 10, 10)
 for i in rf_param:
     detector = ExplanationShiftDetector(
-        model=RandomForestRegressor(n_estimators=int(i),max_features=int(i)), gmodel=LogisticRegression()
+        model=RandomForestRegressor(n_estimators=int(i), max_features=int(i)),
+        gmodel=LogisticRegression(),
     )
 
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
@@ -109,6 +109,75 @@ plt.fill_between(rf_param, (rf_list - ci), (rf_list + ci), alpha=0.1)
 plt.xlabel("Max Depth/Hyperparameter")
 plt.ylabel("Explanation Shift AUC")
 plt.legend()
+plt.title("Log. Reg. as Explanation Shift Detector")
 plt.savefig("images/NewCategoryHyper.pdf", bbox_inches="tight")
+plt.show()
+# %%
+#######################################
+########################################
+# XGB
+xgb_list = []
+xgb_param = np.linspace(1, 10, 10)
+for i in xgb_param:
+    detector = ExplanationShiftDetector(
+        model=XGBClassifier(n_estimators=int(i), max_depth=int(i)),
+        gmodel=XGBClassifier(),
+    )
+    detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
+
+    value = detector.get_auc_val()
+
+    xgb_list.append(value)
+# %%
+# Decision Tree
+dt_list = []
+dt_param = np.linspace(1, 10, 9)
+for i in dt_param:
+    detector = ExplanationShiftDetector(
+        model=DecisionTreeRegressor(max_depth=int(i)), gmodel=XGBClassifier()
+    )
+    detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
+
+    value = detector.get_auc_val()
+    dt_list.append(value)
+# %%
+# Random Forest
+rf_list = []
+rf_param = np.linspace(1, 10, 10)
+for i in rf_param:
+    detector = ExplanationShiftDetector(
+        model=RandomForestRegressor(n_estimators=int(i), max_features=int(i)),
+        gmodel=XGBClassifier(),
+    )
+
+    detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
+
+    value = detector.get_auc_val()
+    rf_list.append(value)
+
+
+# %%
+# Plot
+plt.figure(figsize=(10, 8))
+# XGB
+plt.plot(xgb_param, xgb_list, label="XGB")
+ci = 1.96 * np.std(xgb_list) / np.sqrt(len(xgb_param))
+plt.fill_between(xgb_param, (xgb_list - ci), (xgb_list + ci), alpha=0.1)
+
+# DT
+plt.plot(dt_param, dt_list, label="Decision Tree")
+ci = 1.96 * np.std(dt_list) / np.sqrt(len(dt_param))
+plt.fill_between(dt_param, (dt_list - ci), (dt_list + ci), alpha=0.1)
+
+# RF
+plt.plot(rf_param, rf_list, label="Random Forest")
+ci = 1.96 * np.std(rf_list) / np.sqrt(len(rf_param))
+plt.fill_between(rf_param, (rf_list - ci), (rf_list + ci), alpha=0.1)
+
+plt.xlabel("Max Depth/Hyperparameter")
+plt.ylabel("Explanation Shift AUC")
+plt.legend()
+plt.title("XGB as Explanation Shift Detector")
+plt.savefig("images/NewCategoryHyperXGB.pdf", bbox_inches="tight")
 plt.show()
 # %%
