@@ -120,10 +120,10 @@ plt.plot(results["rho"], results["unc"], label="Uncertainty by CP")
 plt.plot(results["rho"], results["wass"], label="Wasserstein Ouput")
 plt.legend()
 plt.xlabel("Correlation coefficient $\rho$")
-plt.ylabel("Score")
+plt.ylabel("OOD Metrics")
 plt.title("Sensitivity to Multicovariate Shift")
 plt.tight_layout()
-plt.savefig("images/SOTAsensitivity.png")
+plt.savefig("images/SOTAsensitivity.pdf", bbox_inches="tight")
 plt.show()
 
 # %%

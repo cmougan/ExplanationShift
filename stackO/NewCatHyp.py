@@ -23,21 +23,50 @@ from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 from alibi_detect.cd import ChiSquareDrift, TabularDrift, ClassifierDrift
 from category_encoders import TargetEncoder
+
 # %%
-data = pd.read_csv('stackO/survey_results_public.csv')
+data = pd.read_csv("stackO/survey_results_public.csv")
 # %%
-data = data[data.ConvertedCompYearly.isna()==False]
+data = data[data.ConvertedCompYearly.isna() == False]
 data = data.fillna(0)
-data = data.drop(columns=['CompFreq', 'CompTotal', 'SOPartFreq', 'PlatformWantToWorkWith',
-       'SurveyEase', 'OfficeStackAsyncWantToWorkWith',
-       'OfficeStackSyncWantToWorkWith', 'Knowledge_3', 'Accessibility', 'Age',
-       'VCInteraction', 'TimeSearching', 'Trans', 'MentalHealth', 'Onboarding',
-       'TimeAnswering', 'TrueFalse_3', 'Knowledge_4', 'NEWSOSites',
-       'Knowledge_1', 'VersionControlSystem', 'Knowledge_5', 'Frequency_1',
-       'Knowledge_6', 'Blockchain', 'Frequency_3', 'Gender', 'TBranch',
-       'SOAccount', 'Frequency_2', 'TrueFalse_2', 'VCHostingPersonal use',
-       'VCHostingProfessional use'])
-# %%
+data = data.drop(
+    columns=[
+        "CompFreq",
+        "CompTotal",
+        "SOPartFreq",
+        "PlatformWantToWorkWith",
+        "SurveyEase",
+        "OfficeStackAsyncWantToWorkWith",
+        "OfficeStackSyncWantToWorkWith",
+        "Knowledge_3",
+        "Accessibility",
+        "Age",
+        "VCInteraction",
+        "TimeSearching",
+        "Trans",
+        "MentalHealth",
+        "Onboarding",
+        "TimeAnswering",
+        "TrueFalse_3",
+        "Knowledge_4",
+        "NEWSOSites",
+        "Knowledge_1",
+        "VersionControlSystem",
+        "Knowledge_5",
+        "Frequency_1",
+        "Knowledge_6",
+        "Blockchain",
+        "Frequency_3",
+        "Gender",
+        "TBranch",
+        "SOAccount",
+        "Frequency_2",
+        "TrueFalse_2",
+        "VCHostingPersonal use",
+        "VCHostingProfessional use",
+    ]
+)
+# %%
 te = TargetEncoder()
 
 
@@ -46,9 +75,12 @@ r = "India"
 df_tr = data[data["Country"] != r]
 # Train test split
 X_tr, X_te, y_tr, y_te = train_test_split(
-    df_tr.drop(columns=['ConvertedCompYearly'], axis=1), df_tr['ConvertedCompYearly'], test_size=0.5, random_state=42
+    df_tr.drop(columns=["ConvertedCompYearly"], axis=1),
+    df_tr["ConvertedCompYearly"],
+    test_size=0.5,
+    random_state=42,
 )
-X_ood = data[data["Country"] == r].drop('ConvertedCompYearly', axis=1)
+X_ood = data[data["Country"] == r].drop("ConvertedCompYearly", axis=1)
 
 
 te = TargetEncoder()
