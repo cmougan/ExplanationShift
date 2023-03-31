@@ -110,7 +110,7 @@ plt.xlabel("Max Depth/Hyperparameter")
 plt.ylabel("Explanation Shift AUC")
 plt.legend()
 plt.title("Log. Reg. as Explanation Shift Detector")
-plt.savefig("images/NewCategoryHyper.pdf", bbox_inches="tight")
+plt.savefig("images/NewCategoryHyperSO.pdf", bbox_inches="tight")
 plt.show()
 # %%
 #######################################
@@ -146,7 +146,7 @@ rf_list = []
 rf_param = np.linspace(1, 10, 10)
 for i in rf_param:
     detector = ExplanationShiftDetector(
-        model=RandomForestRegressor(n_estimators=int(i), max_features=int(i)),
+        model=RandomForestRegressor(n_estimators=int(i), max_depth=int(i)),
         gmodel=XGBClassifier(),
     )
 
