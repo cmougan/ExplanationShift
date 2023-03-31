@@ -173,10 +173,10 @@ plt.plot(iters, res_exp, label="Explanation Space")
 plt.plot(iters, res_inp, label="Input Space")
 plt.plot(iters, res_out, label="Output Space")
 plt.xlabel(r"Correlation coefficient $\rho$")
-plt.ylabel(r"$g_\psi$ AUC")
+plt.ylabel(r"$g$ AUC")
 plt.legend()
 plt.tight_layout()
-plt.savefig("images/sensivity.png")
+plt.savefig("images/sensivity.pdf", bbox_inches="tight")
 plt.show()
 # %%
 # Accountability Explanation Space
