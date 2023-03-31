@@ -170,8 +170,17 @@ for rho in iters:
 plt.figure()
 plt.title("Sensitivity to Multicovariate Shift")
 plt.plot(iters, res_exp, label="Explanation Space")
+ci = 1.96 * np.std(res_exp) / np.sqrt(len(iters))
+plt.fill_between(iters, (res_exp - ci), (res_exp + ci), alpha=0.1)
+
 plt.plot(iters, res_inp, label="Input Space")
+ci = 1.96 * np.std(res_inp) / np.sqrt(len(iters))
+plt.fill_between(iters, (res_inp - ci), (res_inp + ci), alpha=0.1)
+
 plt.plot(iters, res_out, label="Output Space")
+ci = 1.96 * np.std(res_out) / np.sqrt(len(iters))
+plt.fill_between(iters, (res_out - ci), (res_out + ci), alpha=0.1)
+
 plt.xlabel(r"Correlation coefficient $\rho$")
 plt.ylabel(r"$g$ AUC")
 plt.legend()
@@ -195,7 +204,7 @@ explainer = shap.LinearExplainer(
 shap_values = explainer(S_te)
 plt.figure()
 shap.plots.bar(shap_values, show=False)
-plt.savefig("images/xAIMultivariate.png")
+plt.savefig("images/xAIMultivariate.pdf", bbox_inches="tight")
 plt.show()
 
 # %%
