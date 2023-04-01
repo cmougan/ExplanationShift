@@ -57,7 +57,7 @@ explainer = lime.lime_tabular.LimeTabularExplainer(
 def create_explanation(X, model):
     exp = X.copy()[:0]
 
-    for i, _ in enumerate(X.iterrows()):
+    for i, _ in tqdm(enumerate(X.iterrows())):
 
         ex = explainer.explain_instance(X.iloc[i], model.predict)
         exx = pd.DataFrame(ex.local_exp[0], columns=["feature", "weight"]).sort_values(
@@ -69,9 +69,10 @@ def create_explanation(X, model):
         new_header = exx.iloc[0]  # grab the first row for the header
         exx = exx[1:]  # take the data less the header row
         exx.columns = new_header
+        exx.reset_index(inplace=True)
+        exp = pd.concat([exp, exx])
 
-        exp = exp.append(exx)
-    return exp.reset_index(drop=True)
+    return exp
 
 
 def train_esd(X, X_ood, model, detector):
@@ -79,7 +80,7 @@ def train_esd(X, X_ood, model, detector):
     aux["y"] = 0
     aux_ood = create_explanation(X_ood, model)
     aux_ood["y"] = 1
-    df = aux.append(aux_ood)
+    df = aux.append(aux_ood).drop(columns=["index"])
     X_tr, X_te, y_tr, y_te = train_test_split(
         df.drop("y", axis=1), df["y"], test_size=0.5, random_state=42
     )
@@ -131,6 +132,7 @@ for r in [6]:
         )
 
     aucs[r] = aucs_temp
+    aucs_lime[r] = aucs_lime_temp
 # %%
 # Plot
 plt.figure(figsize=(10, 6))
@@ -147,14 +149,17 @@ for r in [6]:
     elif r == 9:
         label = "Mixed"
 
-    plt.plot(params, aucs[r], label=label)
+    plt.plot(params, aucs[r], label="Shap")
     ci = 1.96 * np.std(aucs[r]) / np.sqrt(len(params))
+
+    plt.plot(params, aucs_lime_temp, label="Lime")
+    # ci = 1.96 * np.std(aucs_lime[r]) / np.sqrt(len(params))
 
     plt.fill_between(params, (aucs[r] - ci), (aucs[r] + ci), alpha=0.1)
 plt.xlabel("Fraction of OOD data")
 plt.ylabel("AUC of Explanation Shift Detector")
 plt.legend()
-plt.savefig("images/NewCategory.pdf", bbox_inches="tight")
+plt.savefig("images/NewCategoryLime.pdf", bbox_inches="tight")
 
 
 # %%
@@ -177,5 +182,3 @@ print("Black:", wasserstein_distance(all_preds, black_preds))
 print("Asian:", wasserstein_distance(all_preds, asian_preds))
 print("Other:", wasserstein_distance(all_preds, other_preds))
 print("Mixed:", wasserstein_distance(all_preds, mixed_preds))
-
-# %%
