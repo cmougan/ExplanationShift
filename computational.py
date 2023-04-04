@@ -55,18 +55,15 @@ for n_sample in n_samples:
 # Grouped Bart Plot
 df = pd.DataFrame(
     {
-        "time": time_tree_shap + time_lime + time_kernel_shap,
+        "time": time_tree_shap + time_lime,
         "method": ["Tree Shap"] * len(time_tree_shap)
-        + ["Lime"] * len(time_lime)
-        + ["Kernel Shap"] * len(time_kernel_shap),
-        "n_samples": n_samples * 3,
+        + ["Lime"] * len(time_lime),
+        #+ ["Kernel Shap"] * len(time_kernel_shap),
+        "n_samples": n_samples * 2,
     }
 )
 sns.barplot(x="n_samples", y="time", hue="method", data=df)
-plt.title("Time to explain 1 instance")
 plt.xlabel("Number of samples")
 plt.ylabel("Time (s)")
 plt.savefig("computational_samples.pdf", bbox_inches="tight")
 plt.show()
-
-# %%
