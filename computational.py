@@ -53,32 +53,9 @@ for n_sample in n_samples:
     toc = time.time()
     time_tree_shap.append(toc - tic)
 
-    # Kernel Shap
-    tic = time.time()
-    explainer = shap.KernelExplainer(model.predict, X)
-    explainer.shap_values(X)
-    toc = time.time()
-    time_kernel_shap.append(toc - tic)
-
 
 # %%
 # Grouped Bart Plot
-# 3
-df = pd.DataFrame(
-    {
-        "time": time_tree_shap + time_lime + time_kernel_shap,
-        "method": ["Tree Shap"] * len(time_tree_shap)
-        + ["Lime"] * len(time_lime)
-        + ["Kernel Shap"] * len(time_kernel_shap),
-        "n_samples": n_samples * 3,
-    }
-)
-sns.barplot(x="n_samples", y="time", hue="method", data=df)
-plt.xlabel("Number of samples")
-plt.ylabel("Time (s)")
-plt.show()
-
-# 2
 df = pd.DataFrame(
     {
         "time": time_tree_shap + time_lime,
