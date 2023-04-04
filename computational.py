@@ -21,8 +21,7 @@ rcParams.update({"font.size": 12})
 time_tree_shap = []
 time_lime = []
 time_kernel_shap = []
-n_samples = [100, 200, 500, 1_000, 5_000, 1_000]
-n_features = [5, 10, 15, 20]
+n_samples = [100, 200, 500, 1_000, 5_000]
 for n_sample in n_samples:
     print(n_sample)
     X, y = make_regression(n_samples=n_sample, n_features=5, noise=1, random_state=42)
@@ -68,7 +67,7 @@ df = pd.DataFrame(
 sns.barplot(x="n_samples", y="time", hue="method", data=df)
 plt.xlabel("Number of samples")
 plt.ylabel("Time (s)")
-plt.savefig("computational_samples.pdf", bbox_inches="tight")
+plt.savefig("images/computational_samples.pdf", bbox_inches="tight")
 plt.show()
 
 
@@ -125,6 +124,6 @@ df = pd.DataFrame(
 sns.barplot(x="n_features", y="time", hue="method", data=df)
 plt.xlabel("Number of features")
 plt.ylabel("Time (s)")
-plt.savefig("computational_features.pdf", bbox_inches="tight")
+plt.savefig("images/computational_features.pdf", bbox_inches="tight")
 plt.show()
 # %%
