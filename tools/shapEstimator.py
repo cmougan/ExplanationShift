@@ -24,7 +24,6 @@ class ShapEstimator(BaseEstimator, ClassifierMixin):
         self.model = model
 
     def fit(self, X, y):
-
         # Check that X and y have correct shape
         X, y = check_X_y(X, y)
         self.X_ = X
@@ -34,7 +33,6 @@ class ShapEstimator(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X, dataframe: bool = False):
-
         # Check is fit had been called
         check_is_fitted(self)
 

@@ -18,7 +18,6 @@ def fit_predict(modelo, enc, data, target, test):
 
 
 def auc_group(model, data, y_true, dicc, group: str = "", min_samples: int = 50):
-
     aux = data.copy()
     aux["target"] = y_true
     cats = aux[group].value_counts()
@@ -125,7 +124,6 @@ def metric_calculator(
 
 
 def plot_rolling(data, roll_mean: int = 5, roll_std: int = 20):
-
     aux = data.rolling(roll_mean).mean().dropna()
     stand = data.rolling(roll_std).quantile(0.05, interpolation="lower").dropna()
     plt.figure()

@@ -96,7 +96,6 @@ class ExplanationShiftDetector(BaseEstimator, ClassifierMixin):
             return self.model.__class__.__name__
 
     def fit(self, X_source, y_source, X_ood):
-
         # Check that X and y have correct shape
         check_X_y(X_source, y_source)
         self.X_ood = X_ood

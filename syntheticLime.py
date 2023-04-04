@@ -42,12 +42,12 @@ def blockPrint():
 blockPrint()
 # %%
 
+
 # %%
 def create_explanation(X, model):
     exp = X.copy()[:0]
 
     for i, _ in tqdm(enumerate(X.iterrows())):
-
         ex = explainer.explain_instance(X.iloc[i], model.predict)
         exx = pd.DataFrame(ex.local_exp[0], columns=["feature", "weight"]).sort_values(
             "feature"

@@ -84,6 +84,7 @@ dataset_classes = [
 for dataset in dataset_classes:
     print(dataset.__name__, dataset().shape)
 
+
 # %%
 def initialise_plot(num_rows: int, num_cols: int, base_regressor: type, dataset):
     fig, axs = plt.subplots(
@@ -130,7 +131,6 @@ def monitoring_plot(
     plot: bool = True,
     **kwargs,
 ):
-
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 

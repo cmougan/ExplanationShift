@@ -17,6 +17,7 @@ from category_encoders import MEstimateEncoder
 
 np.random.seed(101)
 
+
 # %%
 def random_logit(x):
     z = 1.0 / (1 + np.exp(-x))
@@ -503,7 +504,6 @@ def single_experiment_shift(
     outdir="./results",
     verbose=False,
 ):
-
     # Generate source (train) and target (test) datasets
     data_src, data_tar, sensible_feature, non_separating_feature = gen_synth_shift_data(
         gamma_shift_src, gamma_shift_tar, gamma_A, C_src, C_tar, N
@@ -513,7 +513,7 @@ def single_experiment_shift(
     _, X, Y = data_src[0]  # only considers 1st data
 
     all_res = []
-    for (gamma_shift, X_test, Y_test) in data_tar:
+    for gamma_shift, X_test, Y_test in data_tar:
         print("\nShift", gamma_shift)
 
         dataset_train, dataset_test = load_synth(
@@ -840,7 +840,6 @@ def experiment_shift(
             sf_ratio,
             class_ratio,
         ) in shift_res_single_run:
-
             for method in methods:
                 for metric in metrics:
                     res_all_runs[method][metric][shift_id, run] = res_single_run[
@@ -905,7 +904,6 @@ def read_experiment_shift(
     parallel=False,
     verbose=False,
 ):
-
     with open(
         "{}/synthetic_res_all_gamma_shift_N_{}_R_{}.pickle".format(outdir, N, R), "rb"
     ) as fr:
@@ -1084,7 +1082,6 @@ def read_experiment_shift(
     parallel=False,
     verbose=False,
 ):
-
     with open(
         "{}/synthetic_res_all_gamma_shift_N_{}_R_{}.pickle".format(outdir, N, R), "rb"
     ) as fr:

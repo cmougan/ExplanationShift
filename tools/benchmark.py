@@ -16,7 +16,6 @@ warnings.filterwarnings("ignore")
 
 
 def benchmark_experiment(datasets: list, model, classification: str = "classification"):
-
     assert classification in [
         "classification",
         "regression",
@@ -65,7 +64,6 @@ def benchmark_experiment(datasets: list, model, classification: str = "classific
             twoThird = data.shape[0] - int(data.shape[0] * fracc)
 
             for idx, col in tqdm(enumerate(X.columns), total=len(X.columns)):
-
                 # Sort data on the column
                 data = data.sort_values(col).reset_index(drop=True).copy()
 

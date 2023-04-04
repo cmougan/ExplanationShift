@@ -19,6 +19,8 @@ rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
+
+
 # %%
 def experiment(
     out: int = 1, samples: int = 50_000, sigma: int = 5, mean: list = [0, 0]
@@ -75,7 +77,6 @@ pval = []
 ks = []
 xx = np.linspace(0, 10, 50)
 for i in tqdm(xx):
-
     s1, s2, x1, x2 = experiment(out=i)
     pval.append(np.mean([x1.pvalue, x2.pvalue]))
     ks.append(np.mean([x1.statistic, x2.statistic]))
