@@ -8,3 +8,4 @@ shap==0.41.0
 folktables==0.0.11
 tqdm==4.62.3
 pandas==1.4.3
+nobias==0.1.51
