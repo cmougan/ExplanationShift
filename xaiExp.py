@@ -98,7 +98,7 @@ for i, state in enumerate(states):
 # plt.axvline(hold_auc, label="CA-14 (Hold Out)")
 plt.legend()
 plt.tight_layout()
-plt.savefig("images/AUC_OOD_{}.png".format(datasets))
+plt.savefig("images/AUC_OOD_{}.pdf".format(datasets),bbox_inches="tight")
 plt.close()
 # %%
 # Analysis of performance of G
@@ -142,5 +142,5 @@ sns.heatmap(
     norm=LogNorm(),
 )
 plt.tight_layout()
-plt.savefig("images/feature_importance_{}.png".format(datasets))
+plt.savefig("images/feature_importance_{}.pdf".format(datasets),bbox_inches="tight")
 plt.close()
