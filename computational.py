@@ -103,7 +103,7 @@ time_kernel_shap = []
 n_features = [5, 10, 15, 20, 25]
 for n_feature in n_features:
     X, y = make_regression(
-        n_samples=100, n_features=n_feature, noise=1, random_state=42
+        n_samples=1000, n_features=n_feature, noise=1, random_state=42
     )
     # Convert X to dataframe
     X = pd.DataFrame(X)
@@ -133,13 +133,6 @@ for n_feature in n_features:
     toc = time.time()
     time_tree_shap.append(toc - tic)
 
-    # Kernel Shap
-    tic = time.time()
-    explainer = shap.KernelExplainer(model.predict, X)
-    explainer.shap_values(X)
-    toc = time.time()
-    time_kernel_shap.append(toc - tic)
-
 
 # %%
 # Grouped Bart Plot
@@ -147,8 +140,7 @@ df = pd.DataFrame(
     {
         "time": time_tree_shap + time_lime,
         "method": ["Tree Shap"] * len(time_tree_shap) + ["Lime"] * len(time_lime),
-        # + ["Kernel Shap"] * len(time_kernel_shap),
-        "n_samples": n_samples * 2,
+        "n_features": n_features * 2,
     }
 )
 sns.barplot(x="n_features", y="time", hue="method", data=df)
@@ -156,5 +148,4 @@ plt.xlabel("Number of features")
 plt.ylabel("Time (s)")
 plt.savefig("computational_features.pdf", bbox_inches="tight")
 plt.show()
-
 # %%
