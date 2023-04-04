@@ -38,13 +38,13 @@ data = GetData(type="blobs")
 X, y, X_ood, y_ood = data.get_data()
 # %%
 data = GetData(type="real", datasets="ACSIncome")
-X, y = data.get_state(state="CA", year="2018", N=2_000)
+X, y = data.get_state(state="CA", year="2018", N=20_000)
 # %%
 model = XGBRegressor()
 model.fit(X, y)
 # %%
 explainer = lime.lime_tabular.LimeTabularExplainer(
-    X.values,
+    X.drop(columns=["Race"]).head(100).values,
     feature_names=X.columns,
     class_names=["y"],
     discretize_continuous=True,
@@ -127,7 +127,10 @@ for r in [6]:
         # LIME
         aucs_lime_temp.append(
             train_esd(
-                X_te, X_ood, XGBClassifier().fit(X_tr, y_tr), LogisticRegression()
+                X_te.drop(columns=["Race"]),
+                X_new,
+                XGBClassifier().fit(X_tr.drop(columns=["Race"]), y_tr),
+                LogisticRegression(),
             )
         )
 
@@ -149,14 +152,15 @@ for r in [6]:
     elif r == 9:
         label = "Mixed"
 
-    plt.plot(params, aucs[r], label="Shap")
+    plt.plot(params, aucs[r], label="Shap" + label)
     ci = 1.96 * np.std(aucs[r]) / np.sqrt(len(params))
-
-    plt.plot(params, aucs_lime_temp, label="Lime")
-    # ci = 1.96 * np.std(aucs_lime[r]) / np.sqrt(len(params))
-
     plt.fill_between(params, (aucs[r] - ci), (aucs[r] + ci), alpha=0.1)
-plt.xlabel("Fraction of OOD data")
+
+    plt.plot(params, aucs_lime[r], label="Lime" + label)
+    ci = 1.96 * np.std(aucs_lime[r]) / np.sqrt(len(params))
+    plt.fill_between(params, (aucs_lime[r] - ci), (aucs_lime[r] + ci), alpha=0.1)
+
+    plt.xlabel("Fraction of OOD data")
 plt.ylabel("AUC of Explanation Shift Detector")
 plt.legend()
 plt.savefig("images/NewCategoryLime.pdf", bbox_inches="tight")
