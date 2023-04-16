@@ -25,7 +25,14 @@ from sklearn.ensemble import (
 )
 
 plt.style.use("seaborn-whitegrid")
-plt.rcParams.update({"font.size": 14})
+from matplotlib import rcParams
+
+rcParams["axes.labelsize"] = 14
+rcParams["xtick.labelsize"] = 12
+rcParams["ytick.labelsize"] = 12
+rcParams["figure.figsize"] = 16, 8
+rcParams.update({"font.size": 22})
+
 from xgboost import XGBRegressor, XGBClassifier
 import shap
 from alibi_detect.cd import ChiSquareDrift, TabularDrift, ClassifierDrift
