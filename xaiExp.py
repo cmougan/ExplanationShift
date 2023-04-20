@@ -9,7 +9,7 @@ rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
-rcParams.update({"font.size": 22})
+rcParams.update({"font.size": 16})
 
 import seaborn as sns
 import pandas as pd
