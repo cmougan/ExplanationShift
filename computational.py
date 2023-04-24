@@ -16,7 +16,7 @@ rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
-rcParams.update({"font.size": 12})
+rcParams.update({"font.size": 18})
 # %%
 time_tree_shap = []
 time_lime = []
