@@ -16,7 +16,7 @@ rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
-rcParams.update({"font.size": 18})
+rcParams.update({"font.size": 22})
 # %%
 time_tree_shap = []
 time_lime = []
@@ -65,8 +65,9 @@ df = pd.DataFrame(
     }
 )
 sns.barplot(x="n_samples", y="time", hue="method", data=df)
-plt.xlabel("Number of samples")
-plt.ylabel("Time (s)")
+plt.xlabel("Number of samples",fontsize=18)
+plt.yscale('log')
+plt.ylabel("Time (s)",fontsize=18)
 plt.savefig("images/computational_samples.pdf", bbox_inches="tight")
 plt.show()
 
@@ -122,8 +123,9 @@ df = pd.DataFrame(
     }
 )
 sns.barplot(x="n_features", y="time", hue="method", data=df)
-plt.xlabel("Number of features")
-plt.ylabel("Time (s)")
+plt.xlabel("Number of features",fontsize=18)
+plt.yscale('log')
+plt.ylabel("Time (s)",fontsize=18)
 plt.savefig("images/computational_features.pdf", bbox_inches="tight")
 plt.show()
 # %%
