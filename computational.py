@@ -65,9 +65,9 @@ df = pd.DataFrame(
     }
 )
 sns.barplot(x="n_samples", y="time", hue="method", data=df)
-plt.xlabel("Number of samples",fontsize=18)
-plt.yscale('log')
-plt.ylabel("Time (s)",fontsize=18)
+plt.xlabel("Number of samples", fontsize=18)
+plt.yscale("log")
+plt.ylabel("Time (s)", fontsize=18)
 plt.savefig("images/computational_samples.pdf", bbox_inches="tight")
 plt.show()
 
@@ -123,9 +123,9 @@ df = pd.DataFrame(
     }
 )
 sns.barplot(x="n_features", y="time", hue="method", data=df)
-plt.xlabel("Number of features",fontsize=18)
-plt.yscale('log')
-plt.ylabel("Time (s)",fontsize=18)
+plt.xlabel("Number of features", fontsize=18)
+plt.yscale("log")
+plt.ylabel("Time (s)", fontsize=18)
 plt.savefig("images/computational_features.pdf", bbox_inches="tight")
 plt.show()
 # %%
