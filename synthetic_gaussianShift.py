@@ -1,30 +1,21 @@
 # %%
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import ks_2samp
-import seaborn as sns
 import pandas as pd
 import random
-from collections import defaultdict
 
 random.seed(0)
 # Scikit Learn
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import roc_auc_score, mean_squared_error
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.neural_network import MLPRegressor
-from sklearn.linear_model import LogisticRegression, Lasso, LinearRegression
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.metrics import roc_auc_score
+from sklearn.linear_model import LogisticRegression
 
 plt.style.use("seaborn-whitegrid")
-plt.rcParams.update({"font.size": 14})
-from xgboost import XGBRegressor, XGBClassifier
+from matplotlib import rcParams
+
+rcParams.update({"font.size": 12})
+from xgboost import XGBRegressor
 import shap
-
-import sys
-
 
 # %%
 ## Sensitivity experiment
@@ -168,16 +159,16 @@ for rho in iters:
     """
 # %%
 plt.figure()
-plt.title("Sensitivity to Multicovariate Shift")
-plt.plot(iters, res_exp, label="Explanation Space")
+plt.title("Sensitivity to Covariate Shift")
+plt.plot(iters, res_exp, label=r"Explanation Space $g_\psi$")
 ci = 1.96 * np.std(res_exp) / np.sqrt(len(iters))
 plt.fill_between(iters, (res_exp - ci), (res_exp + ci), alpha=0.1)
 
-plt.plot(iters, res_inp, label="Input Space")
+plt.plot(iters, res_inp, label=r"Input Space $g_\phi$")
 ci = 1.96 * np.std(res_inp) / np.sqrt(len(iters))
-plt.fill_between(iters, (res_inp - ci), (res_inp + ci), alpha=0.1)
+plt.fill_between(iters, (res_inp - 2 * ci), (res_inp + 2 * ci), alpha=0.1)
 
-plt.plot(iters, res_out, label="Output Space")
+plt.plot(iters, res_out, label=r"Output Space $g_\Upsilon$")
 ci = 1.96 * np.std(res_out) / np.sqrt(len(iters))
 plt.fill_between(iters, (res_out - ci), (res_out + ci), alpha=0.1)
 

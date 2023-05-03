@@ -2,10 +2,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import ks_2samp
-import seaborn as sns
 import pandas as pd
 import random
-from collections import defaultdict
 from scipy.stats import ks_2samp, wasserstein_distance
 from doubt import Boot
 from nobias import ExplanationShiftDetector
@@ -13,12 +11,9 @@ from nobias import ExplanationShiftDetector
 random.seed(0)
 # Scikit Learn
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.neural_network import MLPRegressor
-from sklearn.linear_model import LogisticRegression, Lasso, LinearRegression
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import (
     GradientBoostingRegressor,
     GradientBoostingClassifier,
@@ -27,15 +22,11 @@ from sklearn.ensemble import (
 plt.style.use("seaborn-whitegrid")
 from matplotlib import rcParams
 
-rcParams["axes.labelsize"] = 14
-rcParams["xtick.labelsize"] = 12
-rcParams["ytick.labelsize"] = 12
-rcParams["figure.figsize"] = 16, 8
-rcParams.update({"font.size": 22})
+rcParams.update({"font.size": 12})
 
-from xgboost import XGBRegressor, XGBClassifier
+from xgboost import XGBClassifier
 import shap
-from alibi_detect.cd import ChiSquareDrift, TabularDrift, ClassifierDrift
+from alibi_detect.cd import TabularDrift, ClassifierDrift
 
 # %%
 res = []
@@ -119,18 +110,50 @@ results = pd.DataFrame(
 )
 # %%
 plt.figure()
-plt.plot(results["rho"], results["esd"], label="Explanation Shift")
-plt.plot(results["rho"], results["input_ks"], label="Input KS")
-plt.plot(results["rho"], results["classifierDrift"], label="Classifier Drift")
-plt.plot(results["rho"], results["output_ks"], label="Output KS")
-plt.plot(results["rho"], results["unc"], label="Uncertainty by CP")
-plt.plot(results["rho"], results["wass"], label="Wasserstein Ouput")
+plt.plot(
+    results["rho"],
+    results["esd"],
+    label="Explanation Shift",
+    marker=".",
+)
+plt.plot(
+    results["rho"],
+    results["input_ks"],
+    label="Input KS",
+    marker="o",
+)
+plt.plot(
+    results["rho"],
+    results["classifierDrift"],
+    label="Classifier Drift",
+    marker="*",
+)
+plt.plot(
+    results["rho"],
+    results["output_ks"],
+    label="Output KS",
+    marker="s",
+)
+plt.plot(
+    results["rho"],
+    results["unc"],
+    label="Uncertainty by CP",
+    marker="x",
+)
+plt.plot(
+    results["rho"],
+    results["wass"],
+    label="Wasserstein Ouput",
+    marker="v",
+)
 plt.legend()
-plt.xlabel("Correlation coefficient")
-plt.ylabel("OOD Metrics")
-plt.title("Sensitivity to Multicovariate Shift")
+plt.xlabel(r"Correlation coefficient $\rho$")
+plt.ylabel("OOD behaviour")
+plt.title("Prediction of OOD behaviour under increasing covariate shift")
 plt.tight_layout()
 plt.savefig("images/SOTAsensitivity.pdf", bbox_inches="tight")
 plt.show()
 
+# %%
+results["input_ks"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 # %%
