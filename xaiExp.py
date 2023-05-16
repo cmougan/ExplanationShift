@@ -95,9 +95,9 @@ hold_coefs = detector.get_coefs()
 # %%
 # Plot AUC
 plt.figure(figsize=(10, 6))
-plt.title("AUC OOD performance of the Explanation Shift detector")
+plt.title("AUC performance of the Explanation Shift Detector")
 plt.xlabel("AUC")
-plt.ylabel("Density")
+plt.ylabel("AUC Kernel Density Distribution")
 sns.kdeplot(aucs, fill=True, label="In-Distribution (CA14)")
 colors = ["#00BFFF", "#C68E17", "#7DFDFE", "#6F4E37", "#EB5406", "r", "g", "k"]
 for i, state in enumerate(states):
