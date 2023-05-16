@@ -173,7 +173,7 @@ ci = 1.96 * np.std(res_out) / np.sqrt(len(iters))
 plt.fill_between(iters, (res_out - ci), (res_out + ci), alpha=0.1)
 
 plt.xlabel(r"Correlation coefficient $\rho$")
-plt.ylabel(r"$g$ AUC")
+plt.ylabel(r"AUC")
 plt.legend()
 plt.tight_layout()
 plt.savefig("images/sensivity.pdf", bbox_inches="tight")

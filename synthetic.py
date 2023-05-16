@@ -131,7 +131,7 @@ plt.plot(
 plt.plot(
     results["rho"],
     results["output_ks"],
-    label="Output KS",
+    label="Pred. KS",
     marker="s",
 )
 plt.plot(
@@ -143,13 +143,13 @@ plt.plot(
 plt.plot(
     results["rho"],
     results["wass"],
-    label="Wasserstein Ouput",
+    label="Preds. Wasserstein",
     marker="v",
 )
 plt.legend()
 plt.xlabel(r"Correlation coefficient $\rho$")
-plt.ylabel("OOD behaviour")
-plt.title("Prediction of OOD Behaviour Under Increasing Covariate Shift")
+plt.ylabel("Distribution Shift Metrics")
+plt.title("Sensitivy to Covariate Shift for Distribution Shift Methods")
 plt.tight_layout()
 plt.savefig("images/SOTAsensitivity.pdf", bbox_inches="tight")
 plt.show()
