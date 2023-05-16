@@ -149,7 +149,7 @@ plt.plot(
 plt.legend()
 plt.xlabel(r"Correlation coefficient $\rho$")
 plt.ylabel("OOD behaviour")
-plt.title("Prediction of OOD behaviour under increasing covariate shift")
+plt.title("Prediction of OOD Behaviour Under Increasing Covariate Shift")
 plt.tight_layout()
 plt.savefig("images/SOTAsensitivity.pdf", bbox_inches="tight")
 plt.show()
