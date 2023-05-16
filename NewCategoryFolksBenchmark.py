@@ -11,7 +11,7 @@ rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
-rcParams.update({"font.size": 12})
+rcParams.update({"font.size": 16})
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from nobias import ExplanationShiftDetector
@@ -146,8 +146,8 @@ plt.plot(
 )
 
 
-plt.xlabel("Fraction of OOD data")
-plt.ylabel("OOD Metrics")
+plt.xlabel("Fraction of data from previously unseen group")
+plt.ylabel("Impact of the Distribution Shift on the Model")
 plt.legend()
 plt.savefig("images/NewCategoryBenchmark.pdf", bbox_inches="tight")
 # %%
