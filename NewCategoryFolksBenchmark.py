@@ -21,10 +21,44 @@ from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 from tools.datasets import GetData
 from alibi_detect.cd import ChiSquareDrift, TabularDrift, ClassifierDrift
-
+import pdb
 # %%
 data = GetData(type="real", datasets="ACSIncome")
 X, y = data.get_state(state="CA", year="2018", N=20_000)
+# %%
+def c2st(x, y):
+    # Convert to dataframes
+    # Dinamic columns depending on lenght of x
+    try:
+        columns = [f"var_{i}" for i in range(x.shape[1])]
+    except:
+        columns = ["var_0"]
+    if isinstance(x, pd.DataFrame):
+        x = pd.DataFrame(x.values, columns=columns)
+        x["label"] = 0
+        y = pd.DataFrame(y.values, columns=columns)
+        y["label"] = 1
+    else:
+        x = pd.DataFrame(x, columns=columns)
+        x["label"] = 0
+        y = pd.DataFrame(y, columns=columns)
+        y["label"] = 1
+
+    # Concatenate
+    df = pd.concat([x, y], axis=0)
+    
+
+    # Train test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        df.drop(["label"], axis=1), df["label"], test_size=0.5, random_state=42
+    )
+
+    # Train classifier
+    clf = LogisticRegression(random_state=0).fit(X_train, y_train)
+
+    # Evaluate AUC
+    auc = roc_auc_score(y_test, clf.predict_proba(X_test)[:, 1])
+    return auc
 # %%
 df = X.copy()
 df["y"] = y
@@ -46,6 +80,8 @@ params = np.linspace(0.05, 0.99, 10)
 aucs_xgb = []
 aucs_log = []
 input_ks = []
+preds_xgb = []
+preds_log = []
 input_classDrift = []
 
 
@@ -61,24 +97,29 @@ for i in tqdm(params):
         model=XGBClassifier(), gmodel=LogisticRegression()
     )
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
-    aucs_xgb.append(2 * detector.get_auc_val() - 1)
+    aucs_xgb.append(detector.get_auc_val() )
+
+     # Prediction Shift - XGB
+    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:,1]
+    preds_te = detector.model.predict_proba(X_new)[:,1]
+    preds_xgb.append(c2st(preds_tr,preds_te))
 
     # Explanation Shift Log
     detector = ExplanationShiftDetector(
         model=LogisticRegression(), gmodel=XGBClassifier(), masker=True
     )
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
-    aucs_log.append(2 * detector.get_auc_val() - 1)
+    aucs_log.append(detector.get_auc_val())
+
+    # Prediction Shift - Log
+    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:,1]
+    preds_te = detector.model.predict_proba(X_new)[:,1]
+    preds_log.append(c2st(preds_tr,preds_te))
+
 
     # Classifier Drift
-    classDrift = ClassifierDrift(
-        x_ref=X_te.drop(columns="Race").values,
-        model=detector.model,
-        backend="sklearn",
-        n_folds=3,
-    )
-    input_classDrift.append(classDrift.predict(x=X_new.values)["data"]["distance"])
-
+    input_classDrift.append(c2st(X_te.drop(columns='Race'),X_new))
+                            
     # Input KS Test
     cd = TabularDrift(X_tr.drop(columns="Race").values, p_val=0.05)
     input_ks.append(cd.predict(X_new.values)["data"]["distance"].mean())
@@ -88,7 +129,7 @@ for i in tqdm(params):
 plt.figure(figsize=(10, 6))
 
 # XGB AUC
-plt.plot(params, aucs_xgb, label="Exp. Shift XGB", color="darkblue", linewidth=2)
+plt.plot(params, aucs_xgb, label=r"$g_\psi$ = Explanations, $f_\theta$ = XGB", color="darkblue", linewidth=2)
 # ci = 1.96 * np.std(aucs_xgb) / np.sqrt(len(params))
 # plt.fill_between(params, (aucs_xgb - ci), (aucs_xgb + ci), alpha=0.1)
 
@@ -98,29 +139,29 @@ alpha = 0.2
 plt.plot(
     params,
     aucs_log,
-    label="Exp. Shift Log",
+    label=r"$g_\psi$ = Explanations, $f_\theta$ = Log",
     color="lightblue",
     linestyle=":",
     marker="o",
     linewidth=2,
 )
 
-# Input KS Test
+# Preds xgb
 plt.plot(
     params,
-    input_ks,
-    label="KS-Test XGB",
+    preds_xgb,
+    label=r"$g_\Upsilon$ = Predictions, $f_\theta$ = XGB",
     color="darkgreen",
     linewidth=linewidth,
     alpha=alpha,
 )
 plt.plot(
     params,
-    input_ks,
-    label="KS-Test Log",
+    preds_log,
+    label=r"$g_\Upsilon$ = Predictions, $f_\theta$ = Log",
     color="lightgreen",
-    linestyle="None",
     marker="o",
+    linestyle=":",
     linewidth=linewidth,
 )
 
@@ -128,7 +169,7 @@ plt.plot(
 plt.plot(
     params,
     input_classDrift,
-    label="Classifier Drift - XGB",
+    label=r"$g_\phi$ = Input, $f_\theta$ = XGB",
     color="crimson",
     linewidth=linewidth,
     alpha=alpha,
@@ -138,7 +179,7 @@ plt.plot(
 plt.plot(
     params,
     input_classDrift,
-    label="Classifier Drift - Log",
+    label=r"$g_\phi$ = Input, $f_\theta$ = Log",
     color="lightcoral",
     linestyle="None",
     marker="o",
@@ -147,7 +188,7 @@ plt.plot(
 
 
 plt.xlabel("Fraction of data from previously unseen group")
-plt.ylabel("Impact of the Distribution Shift on the Model")
+plt.ylabel("AUC")
 plt.legend()
 plt.savefig("images/NewCategoryBenchmark.pdf", bbox_inches="tight")
 # %%
@@ -235,4 +276,7 @@ res.index = [estimator.__class__.__name__ for estimator in list_estimator]
 res.columns = [estimator.__class__.__name__ for estimator in list_estimator]
 # %%
 res.dropna().astype(float).round(3).to_csv("results/ExplanationShift.csv")
+# %%
+
+c2st(X_te,X_new)
 # %%
