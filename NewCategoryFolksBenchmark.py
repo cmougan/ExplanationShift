@@ -22,10 +22,13 @@ from tqdm import tqdm
 from tools.datasets import GetData
 from alibi_detect.cd import ChiSquareDrift, TabularDrift, ClassifierDrift
 import pdb
+
 # %%
 data = GetData(type="real", datasets="ACSIncome")
 X, y = data.get_state(state="CA", year="2018", N=20_000)
-# %%
+
+
+# %%
 def c2st(x, y):
     # Convert to dataframes
     # Dinamic columns depending on lenght of x
@@ -46,7 +49,6 @@ def c2st(x, y):
 
     # Concatenate
     df = pd.concat([x, y], axis=0)
-    
 
     # Train test split
     X_train, X_test, y_train, y_test = train_test_split(
@@ -59,6 +61,8 @@ def c2st(x, y):
     # Evaluate AUC
     auc = roc_auc_score(y_test, clf.predict_proba(X_test)[:, 1])
     return auc
+
+
 # %%
 df = X.copy()
 df["y"] = y
@@ -97,12 +101,12 @@ for i in tqdm(params):
         model=XGBClassifier(), gmodel=LogisticRegression()
     )
     detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
-    aucs_xgb.append(detector.get_auc_val() )
+    aucs_xgb.append(detector.get_auc_val())
 
-     # Prediction Shift - XGB
-    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:,1]
-    preds_te = detector.model.predict_proba(X_new)[:,1]
-    preds_xgb.append(c2st(preds_tr,preds_te))
+    # Prediction Shift - XGB
+    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:, 1]
+    preds_te = detector.model.predict_proba(X_new)[:, 1]
+    preds_xgb.append(c2st(preds_tr, preds_te))
 
     # Explanation Shift Log
     detector = ExplanationShiftDetector(
@@ -112,14 +116,13 @@ for i in tqdm(params):
     aucs_log.append(detector.get_auc_val())
 
     # Prediction Shift - Log
-    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:,1]
-    preds_te = detector.model.predict_proba(X_new)[:,1]
-    preds_log.append(c2st(preds_tr,preds_te))
-
+    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:, 1]
+    preds_te = detector.model.predict_proba(X_new)[:, 1]
+    preds_log.append(c2st(preds_tr, preds_te))
 
     # Classifier Drift
-    input_classDrift.append(c2st(X_te.drop(columns='Race'),X_new))
-                            
+    input_classDrift.append(c2st(X_te.drop(columns="Race"), X_new))
+
     # Input KS Test
     cd = TabularDrift(X_tr.drop(columns="Race").values, p_val=0.05)
     input_ks.append(cd.predict(X_new.values)["data"]["distance"].mean())
@@ -129,7 +132,13 @@ for i in tqdm(params):
 plt.figure(figsize=(10, 6))
 
 # XGB AUC
-plt.plot(params, aucs_xgb, label=r"$g_\psi$ = Explanations, $f_\theta$ = XGB", color="darkblue", linewidth=2)
+plt.plot(
+    params,
+    aucs_xgb,
+    label=r"$g_\psi$ = Explanations, $f_\theta$ = XGB",
+    color="darkblue",
+    linewidth=2,
+)
 # ci = 1.96 * np.std(aucs_xgb) / np.sqrt(len(params))
 # plt.fill_between(params, (aucs_xgb - ci), (aucs_xgb + ci), alpha=0.1)
 
@@ -278,5 +287,5 @@ res.columns = [estimator.__class__.__name__ for estimator in list_estimator]
 res.dropna().astype(float).round(3).to_csv("results/ExplanationShift.csv")
 # %%
 
-c2st(X_te,X_new)
+c2st(X_te, X_new)
 # %%
