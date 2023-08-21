@@ -175,6 +175,12 @@ plt.plot(
     label="Preds. Wasserstein",
     marker="v",
 )
+plt.plot(
+    results["rho"],
+    results["ndcg"],
+    label="NDCG",
+    marker="^",
+)
 plt.legend()
 plt.xlabel(r"Correlation coefficient $\rho$")
 plt.ylabel("Distribution Shift Metrics")
