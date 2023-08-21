@@ -11,6 +11,7 @@ from nobias import ExplanationShiftDetector
 random.seed(0)
 # Scikit Learn
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import ndcg_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
@@ -101,12 +102,40 @@ for i in np.linspace(0, 1, 11):
     ESD.fit(X_tr, y_tr, X_ood)
     esd = 2 * (ESD.get_auc_val() - 0.5)
 
-    res.append([rho, input_ks, classifierDrift, output_ks, wass, unc, esd])
+    # NDCG
+    ## Shap values in Train
+    explainer = shap.Explainer(model)
+    shap_values_tr = explainer(X_tr)
+    shap_df_tr = pd.DataFrame(shap_values_tr.values)
 
+    ## Shap values in OOD
+    explainer = shap.Explainer(model)
+    shap_values_ood = explainer(X_ood)
+    shap_df_ood = pd.DataFrame(shap_values_ood.values)
+
+    ndcg = ndcg_score(
+        np.asarray([shap_df_tr.columns.values]),
+        np.asarray([shap_df_ood.columns.values]),
+    )
+
+    res.append([rho, input_ks, classifierDrift, output_ks, wass, unc, esd, ndcg])
+
+
+# %%
+np.asarray([shap_df_tr.columns.values])
 # %%
 results = pd.DataFrame(
     res,
-    columns=["rho", "input_ks", "classifierDrift", "output_ks", "wass", "unc", "esd"],
+    columns=[
+        "rho",
+        "input_ks",
+        "classifierDrift",
+        "output_ks",
+        "wass",
+        "unc",
+        "esd",
+        "ndcg",
+    ],
 )
 # %%
 plt.figure()
