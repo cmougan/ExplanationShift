@@ -115,7 +115,7 @@ for i in np.linspace(0, 1, 11):
 
     id = shap_df_tr.mean().sort_values(ascending=False).index.values
     nid = shap_df_ood.mean().sort_values(ascending=False).index.values
-    ndcg = 1 - ndcg_score(
+    ndcg = ndcg_score(
         np.asarray([id]),
         np.asarray([nid]),
     )
@@ -187,10 +187,3 @@ plt.title("Sensitivy to Covariate Shift for Distribution Shift Methods")
 plt.tight_layout()
 plt.savefig("images/SOTAsensitivity.pdf", bbox_inches="tight")
 plt.show()
-
-# %%
-results["input_ks"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-results["classifierDrift"]
-# %%
-results["classifierDrift"][1] = 0.8
-# %%
