@@ -22,6 +22,8 @@ from tqdm import tqdm
 from tools.datasets import GetData
 from alibi_detect.cd import ChiSquareDrift, TabularDrift, ClassifierDrift
 import pdb
+import shap
+from sklearn.metrics import ndcg_score
 
 # %%
 data = GetData(type="real", datasets="ACSIncome")
@@ -87,6 +89,7 @@ input_ks = []
 preds_xgb = []
 preds_log = []
 input_classDrift = []
+ndcgs = []
 
 
 for i in tqdm(params):
@@ -126,6 +129,31 @@ for i in tqdm(params):
     # Input KS Test
     cd = TabularDrift(X_tr.drop(columns="Race").values, p_val=0.05)
     input_ks.append(cd.predict(X_new.values)["data"]["distance"].mean())
+
+    # NDCG - XGB
+    ## Shap values in Train
+    model = XGBClassifier().fit(X_tr.drop(columns="Race").values, y_tr)
+    explainer = shap.Explainer(model)
+    shap_values_tr = explainer(X_tr.drop(columns="Race").values)
+    shap_df_tr = pd.DataFrame(shap_values_tr.values)
+
+    ## Shap values in OOD
+    explainer = shap.Explainer(model)
+    shap_values_ood = explainer(X_new)
+    shap_df_ood = pd.DataFrame(shap_values_ood.values)
+
+    id = shap_df_tr.mean().sort_values(ascending=False).index.values
+    nid = shap_df_ood.mean().sort_values(ascending=False).index.values
+    ndcg = (
+        1
+        - ndcg_score(
+            np.asarray([id]),
+            np.asarray([nid]),
+        )
+        + 0.5
+    )
+    ndcgs.append(ndcg)
+
 
 # %%
 # Plot
@@ -194,6 +222,15 @@ plt.plot(
     marker="o",
     linewidth=linewidth,
 )
+# NDCG XGB
+plt.plot(
+    params,
+    ndcgs,
+    label=r"$f_\theta$ = XGB, Exp. NDCG",
+    color="darkorange",
+    linewidth=linewidth,
+    alpha=alpha,
+)
 
 
 plt.xlabel("Fraction of data from previously unseen group")
@@ -201,7 +238,7 @@ plt.ylabel("AUC")
 plt.legend()
 plt.savefig("images/NewCategoryBenchmark.pdf", bbox_inches="tight")
 # %%
-
+kkkk
 # %%
 # Some Fariness metrics
 all_preds = detector.model.predict_proba(df.drop(columns=["y", "Race"]))[:, 1]
@@ -222,7 +259,6 @@ print("Black:", wasserstein_distance(all_preds, black_preds))
 print("Asian:", wasserstein_distance(all_preds, asian_preds))
 print("Other:", wasserstein_distance(all_preds, other_preds))
 print("Mixed:", wasserstein_distance(all_preds, mixed_preds))
-
 # %%
 # Large Benchmark
 
@@ -288,4 +324,6 @@ res.dropna().astype(float).round(3).to_csv("results/ExplanationShift.csv")
 # %%
 
 c2st(X_te, X_new)
+# %%
+1 - np.array(ndcgs) + 0.5
 # %%
