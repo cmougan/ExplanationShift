@@ -113,16 +113,15 @@ for i in np.linspace(0, 1, 11):
     shap_values_ood = explainer(X_ood)
     shap_df_ood = pd.DataFrame(shap_values_ood.values)
 
-    ndcg = ndcg_score(
-        np.asarray([shap_df_tr.columns.values]),
-        np.asarray([shap_df_ood.columns.values]),
+    id = shap_df_tr.mean().sort_values(ascending=False).index.values
+    nid = shap_df_ood.mean().sort_values(ascending=False).index.values
+    ndcg = 1 - ndcg_score(
+        np.asarray([id]),
+        np.asarray([nid]),
     )
 
     res.append([rho, input_ks, classifierDrift, output_ks, wass, unc, esd, ndcg])
 
-
-# %%
-np.asarray([shap_df_tr.columns.values])
 # %%
 results = pd.DataFrame(
     res,
@@ -188,7 +187,3 @@ plt.title("Sensitivy to Covariate Shift for Distribution Shift Methods")
 plt.tight_layout()
 plt.savefig("images/SOTAsensitivity.pdf", bbox_inches="tight")
 plt.show()
-
-# %%
-results["input_ks"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-# %%
