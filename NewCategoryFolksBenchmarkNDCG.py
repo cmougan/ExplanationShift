@@ -24,8 +24,10 @@ import shap
 from sklearn.metrics import ndcg_score
 
 # %%
-# dataset = "ACSEmployment"
-dataset = "ACSIncome"
+#dataset = "ACSEmployment"
+# dataset = "ACSIncome"
+#dataset = "ACSTravelTime"
+dataset = "ACSMobility"
 data = GetData(type="real", datasets=dataset)
 X, y = data.get_state(state="CA", year="2018", N=20_000)
 # %%
@@ -133,7 +135,7 @@ plt.figure(figsize=(10, 6))
 sns.lineplot(
     x=params,
     y=aucs_xgb,
-    label=r"Explanation Shift Detector (XGB)",
+    label=r"Explanation Shift $f_\theta$ = XGB",
     color="darkblue",
     marker="o",
 )
@@ -142,7 +144,7 @@ sns.lineplot(
 sns.lineplot(
     x=params,
     y=aucs_log,
-    label=r"Explanation Shift Detector (Log)",
+    label=r"Explanation Shift $f_\theta$ = Log",
     color="blue",
     linestyle="--",
 )
@@ -151,7 +153,7 @@ sns.lineplot(
 plt.plot(
     params,
     ndcg_xgb,
-    label="Exp. NDCG (XGB)",
+    label=r"Exp. NDCG $f_\theta$ = XGB",
     color="grey",
     marker="o",
 )
@@ -161,7 +163,7 @@ plt.plot(
 sns.lineplot(
     x=params,
     y=ndcg_log,
-    label="Exp. NDCG (Log)",
+    label=r"Exp. NDCG $f_\theta$ = Log",
     color="black",
     linestyle="--",
 )

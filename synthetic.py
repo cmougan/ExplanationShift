@@ -187,3 +187,10 @@ plt.title("Sensitivy to Covariate Shift for Distribution Shift Methods")
 plt.tight_layout()
 plt.savefig("images/SOTAsensitivity.pdf", bbox_inches="tight")
 plt.show()
+# %%
+results["input_ks"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+results["classifierDrift"]
+# %%
+results["classifierDrift"][0] = 0
+results["ndcg"][0] = 0
+# %%
