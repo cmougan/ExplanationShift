@@ -31,8 +31,6 @@ sum_hours:
 sum_sport_hours:
 	awk -F',' '{sum+=$5;}END{print sum;}' data/sport.csv
 
-
-
 clean_results:
 	find folks/results -name "*.csv" -type f -print0 | xargs -0 /bin/rm -f
 	find results/ -name "*.csv" -type f -print0 | xargs -0 /bin/rm -f
