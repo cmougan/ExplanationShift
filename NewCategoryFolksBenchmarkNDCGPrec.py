@@ -45,7 +45,7 @@ X_ood = df[df["Race"] == r].drop("y", axis=1)
 detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegression())
 
 # Concatenate the training and validation sets
-params = np.linspace(0.01, 0.99, 40)
+
 
 aucs_xgb = []
 aucs_log = []
@@ -57,8 +57,8 @@ ndcg_xgb = []
 ndcg_log = []
 
 
-for i in tqdm(params):
-    n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
+
+    n_samples = X_ood.shape[0] - int(0.8 * X_ood.shape[0])
     n_samples_1 = n_samples
 
     X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
