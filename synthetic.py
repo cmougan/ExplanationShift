@@ -147,37 +147,37 @@ plt.plot(
 plt.plot(
     results["rho"],
     results["input_ks"],
-    label="Input KS",
+    label="Input KS (B1)",
     marker="o",
 )
-plt.plot(
-    results["rho"],
-    results["classifierDrift"],
-    label="Classifier Drift",
-    marker="*",
-)
+# plt.plot(
+#    results["rho"],
+#    results["classifierDrift"],
+#    label="Classifier Drift",
+#    marker="*",
+# )
 plt.plot(
     results["rho"],
     results["output_ks"],
-    label="Pred. KS",
+    label="Pred. KS (B4)",
     marker="s",
 )
 plt.plot(
     results["rho"],
     results["unc"],
-    label="Uncertainty by CP",
+    label="Uncertainty (B5)",
     marker="x",
 )
 plt.plot(
     results["rho"],
     results["wass"],
-    label="Preds. Wasserstein",
+    label="Preds. Wasserstein (B2)",
     marker="v",
 )
 plt.plot(
     results["rho"],
     results["ndcg"],
-    label="NDCG",
+    label="NDCG (B3)",
     marker="^",
 )
 plt.legend()

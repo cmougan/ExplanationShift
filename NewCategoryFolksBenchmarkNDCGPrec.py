@@ -10,13 +10,13 @@ rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
-rcParams.update({"font.size": 16})
+rcParams.update({"font.size": 22})
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from nobias import ExplanationShiftDetector
 from xgboost import XGBRegressor, XGBClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, precision_score, recall_score
 from tqdm import tqdm
 from tools.datasets import GetData
 from alibi_detect.cd import TabularDrift
@@ -27,25 +27,12 @@ from sklearn.metrics import ndcg_score
 # dataset = "ACSEmployment"
 # dataset = "ACSIncome"
 # dataset = "ACSTravelTime"
-dataset = "ACSMobility"
+dataset = "ACSIncome"
 data = GetData(type="real", datasets=dataset)
 X, y = data.get_state(state="CA", year="2018", N=20_000)
 # %%
 df = X.copy()
 df["y"] = y
-
-r = 8
-df_tr = df[df["Race"] != r]
-# Train test split
-X_tr, X_te, y_tr, y_te = train_test_split(
-    df_tr.drop("y", axis=1), df_tr["y"], test_size=0.5, random_state=42
-)
-X_ood = df[df["Race"] == r].drop("y", axis=1)
-
-detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegression())
-
-# Concatenate the training and validation sets
-
 
 aucs_xgb = []
 aucs_log = []
@@ -57,7 +44,19 @@ ndcg_xgb = []
 ndcg_log = []
 
 
+for r in df["Race"].unique():
+    df_tr = df[df["Race"] != r]
+    # Train test split
+    X_tr, X_te, y_tr, y_te = train_test_split(
+        df_tr.drop("y", axis=1), df_tr["y"], test_size=0.5, random_state=42
+    )
+    X_ood = df[df["Race"] == r].drop("y", axis=1)
 
+    detector = ExplanationShiftDetector(
+        model=XGBClassifier(), gmodel=LogisticRegression()
+    )
+
+    # Concatenate the training and validation sets
     n_samples = X_ood.shape[0] - int(0.8 * X_ood.shape[0])
     n_samples_1 = n_samples
 
@@ -168,10 +167,10 @@ sns.lineplot(
     linestyle="--",
 )
 
-plt.xlabel("Fraction of data from previously unseen group")
+plt.xlabel("Fraction of data from previously unseen group", fontsize=22)
 plt.ylabel("AUC")
 plt.title("New Category Benchmark - {}".format(dataset))
-plt.legend()
+plt.legend(fontsize=22)
 plt.savefig(
     "images/NewCategoryBenchmarkNDCG{}.pdf".format(dataset), bbox_inches="tight"
 )
