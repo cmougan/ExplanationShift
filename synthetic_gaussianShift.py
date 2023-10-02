@@ -160,7 +160,7 @@ for rho in iters:
 # %%
 plt.figure()
 plt.title("Sensitivity to Covariate Shift of Classifier Two Sample Test")
-plt.plot(iters, res_exp, label=r"Explanation Distribution $g_\psi$", marker="o")
+plt.plot(iters, res_exp, label=r"Explanation Distribution $g_\psi$ (ours)", marker="o")
 ci = 1.96 * np.std(res_exp) / np.sqrt(len(iters))
 plt.fill_between(iters, (res_exp - ci), (res_exp + ci), alpha=0.1)
 
