@@ -14,7 +14,7 @@ rcParams["figure.figsize"] = 16, 8
 rcParams.update({"font.size": 12})
 import seaborn as sns
 from sklearn.model_selection import train_test_split
-from nobias import ExplanationShiftDetector
+from skshift import ExplanationShiftDetector
 from xgboost import XGBRegressor, XGBClassifier
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor

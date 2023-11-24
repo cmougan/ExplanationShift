@@ -8,7 +8,7 @@ import random
 from collections import defaultdict
 from scipy.stats import ks_2samp, wasserstein_distance
 from doubt import Boot
-from nobias import ExplanationShiftDetector
+from skshift import ExplanationShiftDetector
 
 random.seed(0)
 # Scikit Learn
