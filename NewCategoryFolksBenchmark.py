@@ -26,7 +26,7 @@ import shap
 from sklearn.metrics import ndcg_score
 
 # %%
-data = GetData(type="real", datasets="ACSIncome")
+data = GetData(type="real", datasets="ACSMobility")
 X, y = data.get_state(state="CA", year="2018", N=20_000)
 
 
@@ -237,6 +237,16 @@ plt.xlabel("Fraction of data from previously unseen group")
 plt.ylabel("AUC")
 plt.legend()
 plt.savefig("images/NewCategoryBenchmark.pdf", bbox_inches="tight")
+# %%
+## Correlation Coefficient
+print("Correlation Coefficient")
+print("XGB AUC:", np.corrcoef(params, aucs_xgb)[0, 1])
+print("Log AUC:", np.corrcoef(params, aucs_log)[0, 1])
+print("XGB Preds:", np.corrcoef(params, preds_xgb)[0, 1])
+print("Log Preds:", np.corrcoef(params, preds_log)[0, 1])
+print("Input KS:", np.corrcoef(params, input_ks)[0, 1])
+print("Input Classifier Drift:", np.corrcoef(params, input_classDrift)[0, 1])
+
 # %%
 kkkk
 # %%

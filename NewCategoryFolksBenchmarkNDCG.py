@@ -177,3 +177,11 @@ plt.savefig(
 )
 
 # %%
+# Correlation
+print("Correlation Coefficient")
+print("XGB AUC:", np.corrcoef(params, aucs_xgb)[0, 1])
+print("Log AUC:", np.corrcoef(params, aucs_log)[0, 1])
+print("XGB NDCG:", np.corrcoef(params, ndcg_xgb)[0, 1])
+print("Log NDCG:", np.corrcoef(params, ndcg_log)[0, 1])
+
+# %%

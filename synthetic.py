@@ -194,3 +194,16 @@ results["classifierDrift"]
 results["classifierDrift"][0] = 0
 results["ndcg"][0] = 0
 # %%
+## Correlation coefficient
+print("Correlation explanation", np.corrcoef(results["rho"], results["esd"])[0, 1])
+print("Correlation input KS", np.corrcoef(results["rho"], results["input_ks"])[0, 1])
+print(
+    "Correlation classifierDrift",
+    np.corrcoef(results["rho"], results["classifierDrift"])[0, 1],
+)
+print("Correlation output KS", np.corrcoef(results["rho"], results["output_ks"])[0, 1])
+print("Correlation wass", np.corrcoef(results["rho"], results["wass"])[0, 1])
+print("Correlation unc", np.corrcoef(results["rho"], results["unc"])[0, 1])
+print("Correlation ndcg", np.corrcoef(results["rho"], results["ndcg"])[0, 1])
+
+# %%
