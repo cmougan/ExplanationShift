@@ -208,11 +208,11 @@ plt.show()
 
 # %%
 ## Correlation coefficient
-print('Correlation explanation',np.corrcoef(iters, res_exp)[0,1])
-print('Correlation input',np.corrcoef(iters, res_inp)[0,1])
-print('Correlation output',np.corrcoef(iters, res_out)[0,1])
+print("Correlation explanation", np.corrcoef(iters, res_exp)[0, 1])
+print("Correlation input", np.corrcoef(iters, res_inp)[0, 1])
+print("Correlation output", np.corrcoef(iters, res_out)[0, 1])
 
-# %%
-#Correlation explanation 0.9971629548286309
-#Correlation input 0.18054841217224993
-#Correlation output 0.9694638213466882
+# %%
+# Correlation explanation 0.9971629548286309
+# Correlation input 0.18054841217224993
+# Correlation output 0.9694638213466882

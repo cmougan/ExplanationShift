@@ -237,7 +237,7 @@ plt.xlabel("Fraction of data from previously unseen group", fontsize=20)
 # plt.ylabel("AUC")
 plt.legend(fontsize=18)
 plt.savefig("images/NewCategoryBenchmark.pdf", bbox_inches="tight")
-# %%
+# %%
 ## Correlation Coefficient
 print("Correlation Coefficient")
 print("XGB AUC:", np.corrcoef(params, aucs_xgb)[0, 1])
