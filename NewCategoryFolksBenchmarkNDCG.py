@@ -10,7 +10,7 @@ rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
-rcParams.update({"font.size": 16})
+rcParams.update({"font.size": 22})
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from nobias import ExplanationShiftDetector
@@ -25,9 +25,9 @@ from sklearn.metrics import ndcg_score
 
 # %%
 # dataset = "ACSEmployment"
-# dataset = "ACSIncome"
+dataset = "ACSIncome"
 # dataset = "ACSTravelTime"
-dataset = "ACSMobility"
+# dataset = "ACSMobility"
 data = GetData(type="real", datasets=dataset)
 X, y = data.get_state(state="CA", year="2018", N=20_000)
 # %%
@@ -168,10 +168,10 @@ sns.lineplot(
     linestyle="--",
 )
 
-plt.xlabel("Fraction of data from previously unseen group")
+plt.xlabel("Fraction of data from previously unseen group", fontsize=22)
 plt.ylabel("AUC")
-plt.title("New Category Benchmark - {}".format(dataset))
-plt.legend()
+# plt.title("New Category Benchmark - {}".format(dataset))
+plt.legend(fontsize=16)
 plt.savefig(
     "images/NewCategoryBenchmarkNDCG{}.pdf".format(dataset), bbox_inches="tight"
 )

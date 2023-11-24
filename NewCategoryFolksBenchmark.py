@@ -233,9 +233,9 @@ plt.plot(
 )
 
 
-plt.xlabel("Fraction of data from previously unseen group")
-plt.ylabel("AUC")
-plt.legend()
+plt.xlabel("Fraction of data from previously unseen group", fontsize=20)
+# plt.ylabel("AUC")
+plt.legend(fontsize=18)
 plt.savefig("images/NewCategoryBenchmark.pdf", bbox_inches="tight")
 # %%
 ## Correlation Coefficient

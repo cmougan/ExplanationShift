@@ -83,9 +83,9 @@ for r in [2, 3, 6, 8, 9]:
     ci = 1.96 * np.std(aucs[r]) / np.sqrt(len(params))
 
     plt.fill_between(params, (aucs[r] - ci), (aucs[r] + ci), alpha=0.1)
-plt.xlabel("Fraction of data from previously unseen group")
-plt.ylabel("AUC of Explanation Shift Detector")
-plt.legend()
+plt.xlabel("Fraction of data from previously unseen group", fontsize=20)
+plt.ylabel("AUC of Explanation Shift Detector", fontsize=20)
+plt.legend(fontsize=18)
 plt.savefig("images/NewCategory.pdf", bbox_inches="tight")
 
 

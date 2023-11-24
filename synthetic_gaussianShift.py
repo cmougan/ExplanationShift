@@ -160,17 +160,25 @@ for rho in iters:
 # %%
 plt.figure()
 plt.title("Sensitivity to Covariate Shift of Classifier Two Sample Test")
-plt.plot(iters, res_exp, label=r"Explanation Distribution $g_\psi$")
+plt.plot(iters, res_exp, label=r"Explanation Distribution $g_\psi$ (ours)", marker="o")
 ci = 1.96 * np.std(res_exp) / np.sqrt(len(iters))
 plt.fill_between(iters, (res_exp - ci), (res_exp + ci), alpha=0.1)
 
-plt.plot(iters, res_inp, label=r"Input Distribution $g_\phi$")
+plt.plot(
+    iters, res_inp, label=r"Input Distribution $g_\phi$ (B6)", marker="*", color="red"
+)
 ci = 1.96 * np.std(res_inp) / np.sqrt(len(iters))
-plt.fill_between(iters, (res_inp - 2 * ci), (res_inp + 2 * ci), alpha=0.1)
+plt.fill_between(iters, (res_inp - 2 * ci), (res_inp + 2 * ci), alpha=0.1, color="red")
 
-plt.plot(iters, res_out, label=r"Prediction Distribution $g_\Upsilon$")
+plt.plot(
+    iters,
+    res_out,
+    label=r"Prediction Distribution $g_\Upsilon$ (B7)",
+    marker="x",
+    color="black",
+)
 ci = 1.96 * np.std(res_out) / np.sqrt(len(iters))
-plt.fill_between(iters, (res_out - ci), (res_out + ci), alpha=0.1)
+plt.fill_between(iters, (res_out - ci), (res_out + ci), alpha=0.1, color="black")
 
 plt.xlabel(r"Correlation coefficient $\rho$")
 plt.ylabel(r"AUC")

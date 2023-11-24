@@ -141,43 +141,43 @@ plt.figure()
 plt.plot(
     results["rho"],
     results["esd"],
-    label="Explanation Shift",
+    label="Explanation Shift (ours)",
     marker=".",
 )
 plt.plot(
     results["rho"],
     results["input_ks"],
-    label="Input KS",
+    label="Input KS (B1)",
     marker="o",
 )
-plt.plot(
-    results["rho"],
-    results["classifierDrift"],
-    label="Classifier Drift",
-    marker="*",
-)
+# plt.plot(
+#    results["rho"],
+#    results["classifierDrift"],
+#    label="Classifier Drift",
+#    marker="*",
+# )
 plt.plot(
     results["rho"],
     results["output_ks"],
-    label="Pred. KS",
+    label="Pred. KS (B4)",
     marker="s",
 )
 plt.plot(
     results["rho"],
     results["unc"],
-    label="Uncertainty by CP",
+    label="Uncertainty (B5)",
     marker="x",
 )
 plt.plot(
     results["rho"],
     results["wass"],
-    label="Preds. Wasserstein",
+    label="Preds. Wasserstein (B2)",
     marker="v",
 )
 plt.plot(
     results["rho"],
     results["ndcg"],
-    label="NDCG",
+    label="NDCG (B3)",
     marker="^",
 )
 plt.legend()
@@ -193,17 +193,4 @@ results["classifierDrift"]
 # %%
 results["classifierDrift"][0] = 0
 results["ndcg"][0] = 0
-# %%
-## Correlation coefficient
-print("Correlation explanation", np.corrcoef(results["rho"], results["esd"])[0, 1])
-print("Correlation input KS", np.corrcoef(results["rho"], results["input_ks"])[0, 1])
-print(
-    "Correlation classifierDrift",
-    np.corrcoef(results["rho"], results["classifierDrift"])[0, 1],
-)
-print("Correlation output KS", np.corrcoef(results["rho"], results["output_ks"])[0, 1])
-print("Correlation wass", np.corrcoef(results["rho"], results["wass"])[0, 1])
-print("Correlation unc", np.corrcoef(results["rho"], results["unc"])[0, 1])
-print("Correlation ndcg", np.corrcoef(results["rho"], results["ndcg"])[0, 1])
-
 # %%
