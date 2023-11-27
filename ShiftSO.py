@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+from tqdm import tqdm
 
 plt.style.use("seaborn-whitegrid")
 rcParams["axes.labelsize"] = 14
@@ -15,7 +16,7 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from skshift import ExplanationShiftDetector
 from xgboost import XGBRegressor, XGBClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Lasso
 from sklearn.metrics import roc_auc_score
 from category_encoders import TargetEncoder
 from sklearn.preprocessing import LabelEncoder
@@ -54,6 +55,12 @@ data = data.drop(
         "Knowledge_6",
         "Blockchain",
         "Frequency_3",
+        "ResponseId",
+        "TrueFalse_1",
+        "MainBranch",
+        "SOComm",
+        "Employment",
+        "Currency",
         "Gender",
         "TBranch",
         "SOAccount",
@@ -61,61 +68,99 @@ data = data.drop(
         "TrueFalse_2",
         "VCHostingPersonal use",
         "VCHostingProfessional use",
+        "LanguageHaveWorkedWith",
+        "LanguageWantToWorkWith",
+        "DatabaseHaveWorkedWith",
+        "DatabaseWantToWorkWith",
+        "PlatformHaveWorkedWith",
+        "WebframeHaveWorkedWith",
+        "WebframeWantToWorkWith",
+        "MiscTechHaveWorkedWith",
+        "MiscTechWantToWorkWith",
+        "ToolsTechHaveWorkedWith",
+        "ToolsTechWantToWorkWith",
+        "NEWCollabToolsHaveWorkedWith",
+        "NEWCollabToolsWantToWorkWith",
+        "OpSysProfessional use",
+        "OpSysPersonal use",
+        "OfficeStackAsyncHaveWorkedWith",
+        "OfficeStackSyncHaveWorkedWith",
     ]
 )
 # %%
-country = data[['Country']]
-X = data.drop(columns=["ConvertedCompYearly",'Country'], axis=1)
+country = data[["Country"]]
+X = data.drop(columns=["ConvertedCompYearly", "Country"], axis=1)
 y = data["ConvertedCompYearly"]
-# Encode
+# Encode
 X = TargetEncoder().fit_transform(X, y)
-X['Country'] = country
+X["Country"] = country
 # %%
 # Select the most frequent country
 top1 = country.value_counts().head(1).index[0][0]
-# Select the 2:6 most frequent countries
+# Select the 2:6 most frequent countries
 top5 = country.value_counts().head(6).index[1:]
 # %%
-# Train OOD split
-# Train test split
-X_ = X[X['Country'] == top1]
-y_ = y[X['Country'] == top1]
-X_tr, X_te, y_tr, y_te = train_test_split(
-    X_.drop(columns = 'Country'), y_, test_size=0.5, random_state=42
-)
-## OOD Data
-X_ood = X[X['Country'] != top1]
-y_ood = y[X['Country'] != top1]
-
-# Train model
-model = XGBRegressor()
-model.fit(X_tr, y_tr)
-
-# %%
+# Experiment
+aucs = {}
 for country in top5:
-    X_ood_ = X_ood[X_ood['Country'] == country[0]]
-    y_ood_ = y_ood[X_ood['Country'] == country[0]]
-
-    # OOD Train test split
-    X_ood_tr, X_ood_te, y_ood_tr, y_ood_te = train_test_split(
-        X_ood_.drop(columns = 'Country'), y_ood_, test_size=0.5, random_state=42
+    countr = "France"
+    # Train test val split
+    X_ = X[X["Country"] == top1]
+    y_ = y[X["Country"] == top1]
+    X_tr, X_val, y_tr, y_val = train_test_split(
+        X_.drop(columns="Country"), y_, test_size=0.25, random_state=42
     )
-    # Fit Inspector
-    detector = ExplanationShiftDetector(model=model, gmodel=LogisticRegression())
+    X_te, X_val, y_te, y_val = train_test_split(
+        X_val, y_val, test_size=0.5, random_state=42
+    )
 
-    detector.fit_detector(X_te, X_ood_tr)
-    print(roc_auc_score(y_ood_te, detector.predict_proba(X_ood_te)[:, 1]))
+    ## OOD Data
+    X_ood = X[X["Country"] == country[0]]
 
-    break
+    # Concatenate the training and validation sets
+    params = np.linspace(0.05, 0.99, 30)
 
+    aucs_temp = []
+    for i in tqdm(params):
+        n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
+        n_samples_1 = n_samples
+
+        X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)].drop(
+            columns="Country"
+        )
+        # Split X_ into first two:half and second half
+        X_1 = X_[int(X_.shape[0] / 2) :]
+        X_2 = X_[: int(X_.shape[0] / 2)]
+
+        X_2["ood"] = 1
+        X_te["ood"] = 0
+        X_new = X_te.append(X_2)
+
+        # Fit models and ESD
+        m = Lasso().fit(X_tr, y_tr)
+
+        detector = ExplanationShiftDetector(
+            model=m, gmodel=LogisticRegression(), masker=True, data_masker=X_tr
+        )
+        detector.fit_detector(X_val, X_1)
+        # Calculate AUC
+        val_ = roc_auc_score(
+            X_new["ood"], detector.predict_proba(X_new.drop(columns="ood"))[:, 1]
+        )
+        aucs_temp.append(val_)
+
+    aucs[country] = aucs_temp
 # %%
-detector = ExplanationShiftDetector(model=model, gmodel=LogisticRegression())
-# %%
-detector.fit_detector(X_te, X_ood_tr)
-# %%
-model = XGBRegressor().fit(X_tr, y_tr)
+# Plot
+plt.figure(figsize=(10, 6))
+for country in top5:
 
-detector = ExplanationShiftDetector(model=XGBRegressor(), gmodel=XGBClassifier())
+    plt.plot(params, aucs[country], label=country[0])
+    ci = 1.96 * np.std(aucs[country]) / np.sqrt(len(params))
 
-detector.fit_pipeline(X_tr, y_tr, X_ood_tr)
-# %%
+    plt.fill_between(params, (aucs[country] - ci), (aucs[country] + ci), alpha=0.1)
+plt.xlabel("Fraction of data from previously unseen group", fontsize=20)
+plt.ylabel("AUC of Explanation Shift Detector", fontsize=20)
+plt.legend(fontsize=18)
+plt.savefig("images/NewCategory_SO_linear.pdf", bbox_inches="tight")
+
