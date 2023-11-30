@@ -24,7 +24,7 @@ from sklearn.ensemble import (
     GradientBoostingClassifier,
 )
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 from matplotlib import rcParams
 
 rcParams["axes.labelsize"] = 14
@@ -76,7 +76,8 @@ def train_esd(X, X_ood, model, detector):
     aux["y"] = 0
     aux_ood = create_explanation(X_ood, model)
     aux_ood["y"] = 1
-    df = aux.append(aux_ood).drop(columns=["index"])
+    df = pd.concat([aux,aux_ood]).drop(columns=["index"])
+    # df = aux.append(aux_ood).drop(columns=["index"])
     X_tr, X_te, y_tr, y_te = train_test_split(
         df.drop("y", axis=1), df["y"], test_size=0.5, random_state=42
     )

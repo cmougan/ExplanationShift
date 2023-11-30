@@ -1,7 +1,7 @@
 # %%
 import matplotlib.pyplot as plt
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 plt.rcParams.update({"font.size": 14})
 import pandas as pd
 import random

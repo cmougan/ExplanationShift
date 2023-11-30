@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from scipy.stats import wasserstein_distance
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
@@ -97,7 +97,8 @@ for i in tqdm(params):
     n_samples_1 = n_samples
 
     X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
-    X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
+    X_new = pd.concat([X_te.sample(n_samples, replace=False),X_]).drop(columns=["Race"])
+    # X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
 
     # Explanation Shift XGB
     detector = ExplanationShiftDetector(
@@ -279,7 +280,8 @@ n_samples_1 = n_samples
 params = np.linspace(0.05, 0.99, 5)
 
 X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
-X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
+X_new = pd.concat([X_te.sample(n_samples, replace=False),X_]).drop(columns=["Race"])
+# X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
 
 # Explanation Shift XGB
 # Loop over all estimators

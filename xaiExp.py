@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import sys
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 from matplotlib import rcParams
 
 rcParams["axes.labelsize"] = 14
@@ -26,7 +26,7 @@ from sklearn.preprocessing import StandardScaler
 from tools.explanationShift import ExplanationShiftDetector
 import seaborn as sns
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 from xgboost import XGBClassifier
 
 
@@ -36,7 +36,7 @@ from tools.explanationShift import ExplanationShiftDetector
 # %%
 # Number of bootstrap samples
 N_b = 20
-datasets = sys.argv[1]
+datasets = sys.argv[1] if len(sys.argv)>1 else "ACSIncome"
 data = GetData(datasets=datasets)
 X, y = data.get_state(year=2014, state="CA", verbose=True)
 print("Dataset:", datasets)
@@ -81,9 +81,10 @@ for state in tqdm(states):
         X_ood = X_ood_.sample(frac=0.632, replace=True)
         detector.fit(X, y, X_ood)
         ood_temp.append(detector.get_auc_val())
-        ood_coefs_temp = ood_coefs_temp.append(
+        ood_coefs_temp = pd.concat([
+            ood_coefs_temp,
             pd.DataFrame(detector.get_coefs(), columns=X.columns)
-        )
+        ])
     ood_auc[state] = ood_temp
     ood_coefs[state] = ood_coefs_temp
 
