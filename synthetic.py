@@ -20,7 +20,7 @@ from sklearn.ensemble import (
     GradientBoostingClassifier,
 )
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 from matplotlib import rcParams
 
 rcParams.update({"font.size": 12})

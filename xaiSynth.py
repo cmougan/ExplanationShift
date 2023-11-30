@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import wasserstein_distance
 from skshift import ExplanationShiftDetector
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 from matplotlib import rcParams
 
 rcParams["axes.labelsize"] = 14

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from tqdm import tqdm
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
@@ -134,7 +134,8 @@ for country in top5:
 
         X_2["ood"] = 1
         X_te["ood"] = 0
-        X_new = X_te.append(X_2)
+        X_new = pd.concat([X_te,X_2])
+        # X_new = X_te.append(X_2)
 
         # Fit models and ESD
         m = Lasso().fit(X_tr, y_tr)
