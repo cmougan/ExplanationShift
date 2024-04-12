@@ -22,7 +22,7 @@ plt.rcParams["axes.facecolor"] = "white"
 plt.rcParams["axes.grid"] = True
 sns.set(font_scale=2)
 sns.set_style("whitegrid")
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 # %%
 N = 5_000
 gamma = 1

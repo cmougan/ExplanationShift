@@ -7,7 +7,6 @@ from matplotlib import rcParams
 from scipy.stats import wasserstein_distance
 
 plt.style.use("seaborn-whitegrid")
-from matplotlib import rcParams
 
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
@@ -81,7 +80,8 @@ def train_esd(X, X_ood, model, detector):
     aux["y"] = 0
     aux_ood = create_explanation(X_ood, model)
     aux_ood["y"] = 1
-    df = aux.append(aux_ood).drop(columns=["index"])
+    df = pd.concat([aux, aux_ood]).drop(columns=["index"])
+    # df = aux.append(aux_ood).drop(columns=["index"])
     X_tr, X_te, y_tr, y_te = train_test_split(
         df.drop("y", axis=1), df["y"], test_size=0.5, random_state=42
     )
@@ -120,7 +120,8 @@ for r in [6]:
         n_samples_1 = n_samples
 
         X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
-        X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
+        X_new = pd.concat([X_te.sample(n_samples, replace=False), X_]).drop(columns=["Race"])
+        # X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
 
         detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
         aucs_temp.append(detector.get_auc_val())

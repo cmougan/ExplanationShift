@@ -18,7 +18,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.linear_model import LogisticRegression, Lasso, LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 from xgboost import XGBRegressor, XGBClassifier
 import shap
 

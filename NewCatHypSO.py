@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
@@ -94,7 +94,8 @@ n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
 n_samples_1 = n_samples
 
 X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
-X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Country"])
+X_new = pd.concat([X_te.sample(n_samples, replace=False),X_]).drop(columns=["Country"])
+# X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Country"])
 # %%
 # XGB
 xgb_list = []

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from scipy.stats import wasserstein_distance
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
@@ -57,7 +57,8 @@ for r in [2, 3, 6, 8, 9]:
         n_samples_1 = n_samples
 
         X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
-        X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
+        X_new = pd.concat([X_te.sample(n_samples, replace=False),X_]).drop(columns=["Race"])
+        # X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
 
         detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
         aucs_temp.append(detector.get_auc_val())

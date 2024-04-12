@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from scipy.stats import wasserstein_distance
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
@@ -87,6 +87,37 @@ detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegres
 # Concatenate the training and validation sets
 params = np.linspace(0.05, 0.99, 10)
 
+<<<<<<< HEAD
+=======
+aucs_xgb = []
+aucs_log = []
+input_ks = []
+preds_xgb = []
+preds_log = []
+input_classDrift = []
+ndcgs = []
+
+
+for i in tqdm(params):
+    n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
+    n_samples_1 = n_samples
+
+    X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
+    X_new = pd.concat([X_te.sample(n_samples, replace=False),X_]).drop(columns=["Race"])
+    # X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
+
+    # Explanation Shift XGB
+    detector = ExplanationShiftDetector(
+        model=XGBClassifier(), gmodel=LogisticRegression()
+    )
+    detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
+    aucs_xgb.append(detector.get_auc_val())
+
+    # Prediction Shift - XGB
+    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:, 1]
+    preds_te = detector.model.predict_proba(X_new)[:, 1]
+    preds_xgb.append(c2st(preds_tr, preds_te))
+>>>>>>> 430daca0ce23e12330ac376533c38a8528a6da88
 
 for i in range(10):
     aucs_xgb = []
@@ -270,7 +301,8 @@ n_samples_1 = n_samples
 params = np.linspace(0.05, 0.99, 5)
 
 X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
-X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
+X_new = pd.concat([X_te.sample(n_samples, replace=False),X_]).drop(columns=["Race"])
+# X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
 
 # Explanation Shift XGB
 # Loop over all estimators

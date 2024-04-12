@@ -49,7 +49,7 @@ from scipy.stats import ks_2samp
 import matplotlib.pyplot as plt
 from mapie.regression import MapieRegressor
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 
 
 import warnings

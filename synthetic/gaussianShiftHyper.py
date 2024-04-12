@@ -14,7 +14,7 @@ sns.set_style(style="whitegrid")
 from matplotlib import rcParams
 
 
-plt.style.use("seaborn-whitegrid")
+plt.style.use("seaborn-v0_8-whitegrid")
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
