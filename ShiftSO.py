@@ -164,4 +164,3 @@ plt.xlabel("Fraction of data from previously unseen group", fontsize=20)
 plt.ylabel("AUC of Explanation Shift Detector", fontsize=20)
 plt.legend(fontsize=18)
 plt.savefig("images/NewCategory_SO_linear.pdf", bbox_inches="tight")
-
