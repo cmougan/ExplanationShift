@@ -7,11 +7,13 @@ from matplotlib import rcParams
 from scipy.stats import wasserstein_distance
 
 plt.style.use("seaborn-whitegrid")
+from matplotlib import rcParams
+
 rcParams["axes.labelsize"] = 14
 rcParams["xtick.labelsize"] = 12
 rcParams["ytick.labelsize"] = 12
 rcParams["figure.figsize"] = 16, 8
-rcParams.update({"font.size": 16})
+rcParams.update({"font.size": 22})
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from skshift import ExplanationShiftDetector
@@ -151,16 +153,17 @@ for r in [6]:
     elif r == 9:
         label = "Mixed"
 
-    plt.plot(params, aucs[r], label="Shap" + label)
+    plt.plot(params, aucs[r], label="Shap")
     ci = 1.96 * np.std(aucs[r]) / np.sqrt(len(params))
     plt.fill_between(params, (aucs[r] - ci), (aucs[r] + ci), alpha=0.1)
 
-    plt.plot(params, aucs_lime[r], label="Lime" + label)
+    plt.plot(params, aucs_lime[r], label="Lime")
     ci = 1.96 * np.std(aucs_lime[r]) / np.sqrt(len(params))
     plt.fill_between(params, (aucs_lime[r] - ci), (aucs_lime[r] + ci), alpha=0.1)
 
     plt.xlabel("Fraction of OOD data")
 plt.ylabel("AUC of Explanation Shift Detector")
+plt.title("Novel Covariate Group (Asian)")
 plt.legend()
 plt.savefig("images/NewCategoryLime.pdf", bbox_inches="tight")
 
@@ -185,3 +188,5 @@ print("Black:", wasserstein_distance(all_preds, black_preds))
 print("Asian:", wasserstein_distance(all_preds, asian_preds))
 print("Other:", wasserstein_distance(all_preds, other_preds))
 print("Mixed:", wasserstein_distance(all_preds, mixed_preds))
+
+# %%

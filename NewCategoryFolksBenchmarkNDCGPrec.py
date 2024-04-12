@@ -152,7 +152,7 @@ sns.lineplot(
 plt.plot(
     params,
     ndcg_xgb,
-    label=r"Exp. NDCG $f_\theta$ = XGB",
+    label=r"(B3)Exp. NDCG $f_\theta$ = XGB",
     color="grey",
     marker="o",
 )
@@ -162,7 +162,7 @@ plt.plot(
 sns.lineplot(
     x=params,
     y=ndcg_log,
-    label=r"Exp. NDCG $f_\theta$ = Log",
+    label=r"(B3)Exp. NDCG $f_\theta$ = Log",
     color="black",
     linestyle="--",
 )

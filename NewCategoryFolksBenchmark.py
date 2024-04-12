@@ -16,7 +16,7 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from skshift import ExplanationShiftDetector
 from xgboost import XGBRegressor, XGBClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression,LinearRegression   
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 from tools.datasets import GetData
@@ -24,7 +24,11 @@ from alibi_detect.cd import ChiSquareDrift, TabularDrift, ClassifierDrift
 import pdb
 import shap
 from sklearn.metrics import ndcg_score
-
+from scipy.stats import ks_2samp
+from mapie.classification import MapieClassifier
+from mapie.regression import MapieRegressor
+import random
+random.seed(42)
 # %%
 data = GetData(type="real", datasets="ACSMobility")
 X, y = data.get_state(state="CA", year="2018", N=20_000)
@@ -83,170 +87,157 @@ detector = ExplanationShiftDetector(model=XGBClassifier(), gmodel=LogisticRegres
 # Concatenate the training and validation sets
 params = np.linspace(0.05, 0.99, 10)
 
-aucs_xgb = []
-aucs_log = []
-input_ks = []
-preds_xgb = []
-preds_log = []
-input_classDrift = []
-ndcgs = []
 
+for i in range(10):
+    aucs_xgb = []
+    aucs_log = []
+    input_ks = []
+    preds_xgb = []
+    preds_log = []
+    input_classDrift = []
+    ndcgs = []
+    ndcgs_log = []
+    preds_w_log = []
+    preds_w_xgb = []
+    preds_ks_log = []
+    preds_ks_xgb = []
+    unc_log = []
+    unc_xgb = []
 
-for i in tqdm(params):
-    n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
-    n_samples_1 = n_samples
+    for i in tqdm(params):
+        n_samples = X_ood.shape[0] - int(i * X_ood.shape[0])
+        n_samples_1 = n_samples
 
-    X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
-    X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
+        X_ = X_ood.loc[~X_ood.index.isin(X_ood.sample(n_samples).index)]
+        X_new = X_te.sample(n_samples, replace=False).append(X_).drop(columns=["Race"])
 
-    # Explanation Shift XGB
-    detector = ExplanationShiftDetector(
-        model=XGBClassifier(), gmodel=LogisticRegression()
-    )
-    detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
-    aucs_xgb.append(detector.get_auc_val())
-
-    # Prediction Shift - XGB
-    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:, 1]
-    preds_te = detector.model.predict_proba(X_new)[:, 1]
-    preds_xgb.append(c2st(preds_tr, preds_te))
-
-    # Explanation Shift Log
-    detector = ExplanationShiftDetector(
-        model=LogisticRegression(), gmodel=XGBClassifier(), masker=True
-    )
-    detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
-    aucs_log.append(detector.get_auc_val())
-
-    # Prediction Shift - Log
-    preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:, 1]
-    preds_te = detector.model.predict_proba(X_new)[:, 1]
-    preds_log.append(c2st(preds_tr, preds_te))
-
-    # Classifier Drift
-    input_classDrift.append(c2st(X_te.drop(columns="Race"), X_new))
-
-    # Input KS Test
-    cd = TabularDrift(X_tr.drop(columns="Race").values, p_val=0.05)
-    input_ks.append(cd.predict(X_new.values)["data"]["distance"].mean())
-
-    # NDCG - XGB
-    ## Shap values in Train
-    model = XGBClassifier().fit(X_tr.drop(columns="Race").values, y_tr)
-    explainer = shap.Explainer(model)
-    shap_values_tr = explainer(X_tr.drop(columns="Race").values)
-    shap_df_tr = pd.DataFrame(shap_values_tr.values)
-
-    ## Shap values in OOD
-    explainer = shap.Explainer(model)
-    shap_values_ood = explainer(X_new)
-    shap_df_ood = pd.DataFrame(shap_values_ood.values)
-
-    id = shap_df_tr.mean().sort_values(ascending=False).index.values
-    nid = shap_df_ood.mean().sort_values(ascending=False).index.values
-    ndcg = (
-        1
-        - ndcg_score(
-            np.asarray([id]),
-            np.asarray([nid]),
+        # Explanation Shift XGB
+        detector = ExplanationShiftDetector(
+            model=XGBClassifier(), gmodel=LogisticRegression()
         )
-        + 0.5
+        detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
+        aucs_xgb.append(detector.get_auc_val())
+
+        # Prediction Shift - XGB
+        preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:, 1]
+        preds_te = detector.model.predict_proba(X_new)[:, 1]
+        preds_xgb.append(c2st(preds_tr, preds_te))
+        preds_w_xgb.append(wasserstein_distance(preds_tr, preds_te))
+        preds_ks_xgb.append(ks_2samp(preds_tr, preds_te)[0])
+
+        # Unc log
+        mapie_regressor = MapieRegressor(estimator=LinearRegression()).fit(X_tr.drop(columns=["Race"]), y_tr.astype(int))
+        y_pred, y_pis = mapie_regressor.predict(X_new, alpha=[0.05])
+        unc_log.append(np.mean(y_pis[:,0]-y_pis[:,1]))
+
+        # Unc xgb
+        mapie_regressor = MapieRegressor(estimator=LinearRegression()).fit(X_tr.drop(columns=["Race"]), y_tr.astype(int))
+        y_pred, y_pis = mapie_regressor.predict(X_new, alpha=[0.05])
+        unc_xgb.append(np.mean(y_pis[:,0]-y_pis[:,1]))
+
+        # Explanation Shift Log
+        detector = ExplanationShiftDetector(
+            model=LogisticRegression(), gmodel=XGBClassifier(), masker=True
+        )
+        detector.fit(X_tr.drop(columns=["Race"]), y_tr, X_new)
+        aucs_log.append(detector.get_auc_val())
+
+        # Prediction Shift - Log
+        preds_tr = detector.model.predict_proba(X_tr.drop(columns=["Race"]))[:, 1]
+        preds_te = detector.model.predict_proba(X_new)[:, 1]
+        preds_log.append(c2st(preds_tr, preds_te))
+        preds_w_log.append(wasserstein_distance(preds_tr, preds_te))
+        preds_ks_log.append(ks_2samp(preds_tr, preds_te)[0])
+
+        # Classifier Drift
+        input_classDrift.append(c2st(X_te.drop(columns="Race"), X_new))
+
+        # Input KS Test
+        cd = TabularDrift(X_tr.drop(columns="Race").values, p_val=0.05)
+        input_ks.append(cd.predict(X_new.values)["data"]["distance"].mean())
+
+        # NDCG - XGB
+        ## Shap values in Train
+        model = XGBClassifier().fit(X_tr.drop(columns="Race").values, y_tr)
+        explainer = shap.Explainer(model)
+        shap_values_tr = explainer(X_tr.drop(columns="Race").values)
+        shap_df_tr = pd.DataFrame(shap_values_tr.values)
+
+        ## Shap values in OOD
+        explainer = shap.Explainer(model)
+        shap_values_ood = explainer(X_new)
+        shap_df_ood = pd.DataFrame(shap_values_ood.values)
+
+        id = shap_df_tr.mean().sort_values(ascending=False).index.values
+        nid = shap_df_ood.mean().sort_values(ascending=False).index.values
+        ndcg = (
+            1
+            - ndcg_score(
+                np.asarray([id]),
+                np.asarray([nid]),
+            )
+            + 0.5
+        )
+        ndcgs.append(ndcg)
+
+        # NDCG - Log
+        ## Shap values in Train
+        model = LogisticRegression().fit(X_tr.drop(columns="Race").values, y_tr)
+        explainer = shap.Explainer(model,masker = X_tr.drop(columns="Race"))
+        shap_values_tr = explainer(X_tr.drop(columns="Race").values)
+        shap_df_tr = pd.DataFrame(shap_values_tr.values)
+
+        ## Shap values in OOD
+        explainer = shap.Explainer(model,masker = X_tr.drop(columns="Race"))
+        shap_values_ood = explainer(X_new)
+        shap_df_ood = pd.DataFrame(shap_values_ood.values)
+
+        id = shap_df_tr.mean().sort_values(ascending=False).index.values
+        nid = shap_df_ood.mean().sort_values(ascending=False).index.values
+        ndcg = (
+            1
+            - ndcg_score(
+                np.asarray([id]),
+                np.asarray([nid]),
+            )
+            + 0.5
+        )
+        ndcgs_log.append(ndcg)
+
+
+
+
+
+
+    # Convert to dataframe
+    res = pd.DataFrame(
+        {
+            "XGB AUC": np.corrcoef(params, aucs_xgb)[0, 1],
+            "Log AUC": np.corrcoef(params, aucs_log)[0, 1],
+            "XGB Preds": np.corrcoef(params, preds_xgb)[0, 1],
+            "Log Preds": np.corrcoef(params, preds_log)[0, 1],
+            "Input KS": np.corrcoef(params, input_ks)[0, 1],
+            "Input Classifier Drift": np.corrcoef(params, input_classDrift)[0, 1],
+            "NDCG": np.corrcoef(params, ndcgs)[0, 1],
+            "NDCG Log": np.corrcoef(params, ndcgs_log)[0, 1],
+            "XGB Wasserstein": np.corrcoef(params, preds_w_xgb)[0, 1],
+            "Log Wasserstein": np.corrcoef(params, preds_w_log)[0, 1],
+            "XGB KS": np.corrcoef(params, preds_ks_xgb)[0, 1],
+            "Log KS": np.corrcoef(params, preds_ks_log)[0, 1],
+            "Unc Log": np.corrcoef(params, unc_log)[0, 1],
+            "Unc XGB": np.corrcoef(params, unc_xgb)[0, 1],
+        },index = [i]
     )
-    ndcgs.append(ndcg)
+    # Concatenate
+    try:
+        res_ = pd.concat([res_, res])
+    except:
+        res_ = res
 
-
-# %%
-# Plot
-plt.figure(figsize=(10, 6))
-
-# XGB AUC
-plt.plot(
-    params,
-    aucs_xgb,
-    label=r"$g_\psi$ = Explanations, $f_\theta$ = XGB",
-    color="darkblue",
-    linewidth=2,
-)
-# ci = 1.96 * np.std(aucs_xgb) / np.sqrt(len(params))
-# plt.fill_between(params, (aucs_xgb - ci), (aucs_xgb + ci), alpha=0.1)
-
-# Log AUC
-linewidth = 3
-alpha = 0.2
-plt.plot(
-    params,
-    aucs_log,
-    label=r"$g_\psi$ = Explanations, $f_\theta$ = Log",
-    color="lightblue",
-    linestyle=":",
-    marker="o",
-    linewidth=2,
-)
-
-# Preds xgb
-plt.plot(
-    params,
-    preds_xgb,
-    label=r"$g_\Upsilon$ = Predictions, $f_\theta$ = XGB",
-    color="darkgreen",
-    linewidth=linewidth,
-    alpha=alpha,
-)
-plt.plot(
-    params,
-    preds_log,
-    label=r"$g_\Upsilon$ = Predictions, $f_\theta$ = Log",
-    color="lightgreen",
-    marker="o",
-    linestyle=":",
-    linewidth=linewidth,
-)
-
-# Classifier Drift
-plt.plot(
-    params,
-    input_classDrift,
-    label=r"$g_\phi$ = Input, $f_\theta$ = XGB",
-    color="crimson",
-    linewidth=linewidth,
-    alpha=alpha,
-)
-
-# Classifier Drift
-plt.plot(
-    params,
-    input_classDrift,
-    label=r"$g_\phi$ = Input, $f_\theta$ = Log",
-    color="lightcoral",
-    linestyle="None",
-    marker="o",
-    linewidth=linewidth,
-)
-# NDCG XGB
-plt.plot(
-    params,
-    ndcgs,
-    label=r"$f_\theta$ = XGB, Exp. NDCG",
-    color="darkorange",
-    linewidth=linewidth,
-    alpha=alpha,
-)
-
-
-plt.xlabel("Fraction of data from previously unseen group", fontsize=20)
-# plt.ylabel("AUC")
-plt.legend(fontsize=18)
-plt.savefig("images/NewCategoryBenchmark.pdf", bbox_inches="tight")
-# %%
-## Correlation Coefficient
-print("Correlation Coefficient")
-print("XGB AUC:", np.corrcoef(params, aucs_xgb)[0, 1])
-print("Log AUC:", np.corrcoef(params, aucs_log)[0, 1])
-print("XGB Preds:", np.corrcoef(params, preds_xgb)[0, 1])
-print("Log Preds:", np.corrcoef(params, preds_log)[0, 1])
-print("Input KS:", np.corrcoef(params, input_ks)[0, 1])
-print("Input Classifier Drift:", np.corrcoef(params, input_classDrift)[0, 1])
-
+# %%
+res_.T.mean(axis=1)
+# %%
+res_.T.std(axis=1)
 # %%
 kkkk
 # %%
