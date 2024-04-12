@@ -16,7 +16,7 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from skshift import ExplanationShiftDetector
 from xgboost import XGBRegressor, XGBClassifier
-from sklearn.linear_model import LogisticRegression,LinearRegression   
+from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 from tools.datasets import GetData
@@ -28,6 +28,7 @@ from scipy.stats import ks_2samp
 from mapie.classification import MapieClassifier
 from mapie.regression import MapieRegressor
 import random
+
 random.seed(42)
 # %%
 data = GetData(type="real", datasets="ACSMobility")
@@ -126,14 +127,18 @@ for i in range(10):
         preds_ks_xgb.append(ks_2samp(preds_tr, preds_te)[0])
 
         # Unc log
-        mapie_regressor = MapieRegressor(estimator=LinearRegression()).fit(X_tr.drop(columns=["Race"]), y_tr.astype(int))
+        mapie_regressor = MapieRegressor(estimator=LinearRegression()).fit(
+            X_tr.drop(columns=["Race"]), y_tr.astype(int)
+        )
         y_pred, y_pis = mapie_regressor.predict(X_new, alpha=[0.05])
-        unc_log.append(np.mean(y_pis[:,0]-y_pis[:,1]))
+        unc_log.append(np.mean(y_pis[:, 0] - y_pis[:, 1]))
 
         # Unc xgb
-        mapie_regressor = MapieRegressor(estimator=LinearRegression()).fit(X_tr.drop(columns=["Race"]), y_tr.astype(int))
+        mapie_regressor = MapieRegressor(estimator=LinearRegression()).fit(
+            X_tr.drop(columns=["Race"]), y_tr.astype(int)
+        )
         y_pred, y_pis = mapie_regressor.predict(X_new, alpha=[0.05])
-        unc_xgb.append(np.mean(y_pis[:,0]-y_pis[:,1]))
+        unc_xgb.append(np.mean(y_pis[:, 0] - y_pis[:, 1]))
 
         # Explanation Shift Log
         detector = ExplanationShiftDetector(
@@ -183,12 +188,12 @@ for i in range(10):
         # NDCG - Log
         ## Shap values in Train
         model = LogisticRegression().fit(X_tr.drop(columns="Race").values, y_tr)
-        explainer = shap.Explainer(model,masker = X_tr.drop(columns="Race"))
+        explainer = shap.Explainer(model, masker=X_tr.drop(columns="Race"))
         shap_values_tr = explainer(X_tr.drop(columns="Race").values)
         shap_df_tr = pd.DataFrame(shap_values_tr.values)
 
         ## Shap values in OOD
-        explainer = shap.Explainer(model,masker = X_tr.drop(columns="Race"))
+        explainer = shap.Explainer(model, masker=X_tr.drop(columns="Race"))
         shap_values_ood = explainer(X_new)
         shap_df_ood = pd.DataFrame(shap_values_ood.values)
 
@@ -203,11 +208,6 @@ for i in range(10):
             + 0.5
         )
         ndcgs_log.append(ndcg)
-
-
-
-
-
 
     # Convert to dataframe
     res = pd.DataFrame(
@@ -226,7 +226,8 @@ for i in range(10):
             "Log KS": np.corrcoef(params, preds_ks_log)[0, 1],
             "Unc Log": np.corrcoef(params, unc_log)[0, 1],
             "Unc XGB": np.corrcoef(params, unc_xgb)[0, 1],
-        },index = [i]
+        },
+        index=[i],
     )
     # Concatenate
     try:
@@ -234,9 +235,9 @@ for i in range(10):
     except:
         res_ = res
 
-# %%
+# %%
 res_.T.mean(axis=1)
-# %%
+# %%
 res_.T.std(axis=1)
 # %%
 kkkk
