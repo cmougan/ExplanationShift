@@ -41,3 +41,14 @@ run_all_datasets:
 	python xaiExp.py ACSEmployment
 	python xaiExp.py ACSMobility
 	python xaiExp.py ACSPublicCoverage
+
+
+squeue_commands:
+	sbatch me.sh
+	squeue --user=cmn1a21
+
+clean:
+	rm -r logs/*
+
+load:
+	 
